@@ -1,7 +1,7 @@
 {
   "agent_meta": {
     "name": "求职智能体",
-    "version": "3.0.0",
+    "version": "4.0.0",
     "framework": "AutoClaw",
     "llm_backend": "GLM-4-Plus",
     "description": "围绕学生学习生活与职业发展的全自动求职智能体，支持跨应用协作（浏览器 → Excel → Word）",
@@ -10,10 +10,24 @@
   },
 
   "skill_registry": {
+    "ocr_extractor": {
+      "module": "skills.ocr_extractor",
+      "class": "OCRExtractorSkill",
+      "description": "证书 OCR 提取 Skill：从证书照片中识别文字，提取证书名称、时间、机构、技能等结构化数据。",
+      "input_schema": {
+        "image_paths": "list[string]",
+        "ocr_demo_mode": "boolean"
+      },
+      "output_schema": {
+        "experiences": "list[ExperienceItem]",
+        "count": "integer"
+      },
+      "trigger_phrases": ["证书识别", "从照片提取", "证书OCR"]
+    },
     "jd_analyzer": {
       "module": "skills.jd_analyzer",
       "class": "JDAnalyzerSkill",
-      "description": "JD 分析 Skill：从岗位 JD 文本中提取硬技能、软素质、学历、出勤要求，为简历定制和匹配评分提供结构化 JD 洞察。",
+      "description": "JD 分析 Skill：从岗位 JD 文本中提取硬技能、软素质、学历、出勤要求。",
       "input_schema": {
         "jd_text": "string",
         "target_role": "string"
@@ -30,7 +44,7 @@
     "experience_extractor": {
       "module": "skills.experience_extractor",
       "class": "ExperienceExtractorSkill",
-      "description": "经历萃取 Skill：从非结构化文本/草稿/证书描述中，提取时间、角色、核心成就，结构化为标准数据。",
+      "description": "经历萃取 Skill：从非结构化文本/草稿/证书描述中，提取时间、角色、核心成就。",
       "input_schema": {
         "raw_text": "string",
         "target_role": "string"
@@ -43,7 +57,7 @@
     "star_polisher": {
       "module": "skills.star_polisher",
       "class": "StarPolisherSkill",
-      "description": "亮点打磨 Skill：按照 STAR 原则重构经历描述，结合 JD 关键词精准覆盖，输出职业感强的 Markdown。",
+      "description": "亮点打磨 Skill：按照 STAR 原则重构经历描述，结合 JD 关键词精准覆盖。",
       "input_schema": {
         "experiences": "list[ExperienceItem]",
         "target_role": "string",
@@ -54,12 +68,12 @@
         "keyword_coverage": "float"
       },
       "trigger_phrases": ["润色简历", "用STAR重写", "让我的经历更职业"],
-      "glm_delegation": "STAR 改写属语义密集型任务，生产环境由 GLM 完成语义级重构；当前为规则引擎 Demo 实现"
+      "glm_delegation": "STAR 改写属语义密集型任务，生产环境由 GLM 完成"
     },
     "resume_writer": {
       "module": "skills.resume_writer",
       "class": "ResumeWriterSkill",
-      "description": "排版适配 Skill：将处理好的内容自动填充进预设的标准化简历模板，导出 Word 文件到本地。",
+      "description": "排版适配 Skill：填充标准化简历模板，导出 Word 文件。",
       "input_schema": {
         "polished_md": "string",
         "user_profile": "UserProfile",
@@ -78,7 +92,7 @@
     "job_scraper": {
       "module": "skills.web_job_scraper",
       "class": "JobScraperSkill",
-      "description": "数据抓取 Skill：驱动 AutoClaw WebDriver 自动翻页，抓取特定岗位的薪资、地点、JD要求，支持跨平台并发。",
+      "description": "数据抓取 Skill：驱动 AutoClaw WebDriver 自动翻页，跨平台并发抓取岗位信息。",
       "input_schema": {
         "keyword": "string",
         "city": "string",
@@ -98,7 +112,7 @@
     "match_scorer": {
       "module": "skills.match_scorer",
       "class": "MatchScorerSkill",
-      "description": "匹配评分 Skill：根据用户简历 Profile 中的技能、意向城市、出勤时间，对抓取的岗位进行 0~100 分评分。",
+      "description": "匹配评分 Skill：四维评分体系（技能/出勤/城市/学历），输出 Tier 分级。",
       "input_schema": {
         "jobs": "list[JobItem]",
         "user_profile": "UserProfile"
@@ -107,12 +121,12 @@
         "scored_jobs": "list[ScoredJobItem]"
       },
       "trigger_phrases": ["哪个岗位更适合我", "帮我打分", "筛选岗位"],
-      "glm_delegation": "JD 匹配属语义密集型任务，生产环境由 GLM 完成语义级评分；当前为规则引擎 Demo 实现"
+      "glm_delegation": "JD 匹配属语义密集型任务，生产环境由 GLM 完成"
     },
     "report_generator": {
       "module": "skills.report_generator",
       "class": "ReportGeneratorSkill",
-      "description": "跨应用写数 Skill：将评分后的岗位数据，按规范格式写入 Excel 对比表（含条件格式、冻结行、匹配色）。",
+      "description": "跨应用写数 Skill：写入 Excel 对比表（条件格式、冻结行、匹配色）。",
       "input_schema": {
         "scored_jobs": "list[ScoredJobItem]",
         "output_path": "string"
@@ -126,14 +140,62 @@
         "write_to": "Microsoft Excel (.xlsx)",
         "output_dir": "output/"
       }
+    },
+    "academic_search": {
+      "module": "skills.academic_search",
+      "class": "AcademicSearchSkill",
+      "description": "学术搜索 Skill：调用 Semantic Scholar API 搜索论文，返回标题、作者、摘要、引用数。",
+      "input_schema": {
+        "research_topic": "string",
+        "max_results": "integer"
+      },
+      "output_schema": {
+        "papers": "list[PaperItem]",
+        "total_count": "integer"
+      },
+      "trigger_phrases": ["搜索论文", "文献搜索", "帮我找论文"]
+    },
+    "paper_digest": {
+      "module": "skills.paper_digest",
+      "class": "PaperDigestSkill",
+      "description": "文献提炼 Skill：对论文摘要进行结构化提取（核心观点、方法论、结论），生成综述 Markdown。",
+      "input_schema": {
+        "papers": "list[PaperItem]",
+        "research_topic": "string"
+      },
+      "output_schema": {
+        "digested_papers": "list[DigestedPaper]",
+        "review_md": "string",
+        "trends": "list[string]"
+      },
+      "trigger_phrases": ["分析论文", "提炼文献", "写综述"],
+      "glm_delegation": "文献提炼属语义密集型任务，生产环境由 GLM 完成"
+    },
+    "literature_report": {
+      "module": "skills.literature_report",
+      "class": "LiteratureReportSkill",
+      "description": "文献综述报告生成 Skill：将文献数据生成 Word 报告（含论文表格、趋势分析、研究建议）。",
+      "input_schema": {
+        "digested_papers": "list[DigestedPaper]",
+        "topic": "string"
+      },
+      "output_schema": {
+        "file_path": "string",
+        "format": "string"
+      },
+      "trigger_phrases": ["生成文献报告", "导出文献综述"],
+      "cross_app": {
+        "write_to": "Microsoft Word (.docx)",
+        "output_dir": "output/"
+      }
     }
   },
 
   "task_pipelines": {
     "resume_generation": {
       "name": "个性化简历生成流（JD 定制）",
-      "description": "案例2核心流程：从经历草稿 → JD 分析 → STAR 打磨 → Word 简历的全自动闭环",
-      "trigger": "用户提供非结构化经历草稿 + 目标岗位 JD（或岗位名称），生成针对性简历",
+      "description": "案例2：从经历草稿 → JD 分析 → STAR 打磨 → Word 简历",
+      "trigger": "用户提供经历草稿 + 目标岗位 JD",
       "steps": [
         {
           "step": 1,
@@ -151,7 +213,7 @@
           "step": 3,
           "skill": "star_polisher",
           "label": "STAR 亮点打磨（JD 定制）",
-          "description": "结合 JD 关键词，用 STAR 原则重构每条经历，优先排列与 JD 匹配的经历"
+          "description": "结合 JD 关键词，用 STAR 原则重构每条经历"
         },
         {
           "step": 4,
@@ -162,31 +224,89 @@
       ],
       "output": "output/{target_role}_定向简历.docx"
     },
+    "resume_with_ocr": {
+      "name": "证书识别 + 简历生成流",
+      "description": "从证书照片 → OCR 识别 → 经历萃取 → STAR 打磨 → Word 简历",
+      "trigger": "用户提供证书照片 + 目标岗位",
+      "steps": [
+        {
+          "step": 1,
+          "skill": "ocr_extractor",
+          "label": "证书照片 OCR 识别",
+          "description": "识别证书照片中的文字，提取结构化经历"
+        },
+        {
+          "step": 2,
+          "skill": "jd_analyzer",
+          "label": "JD 分析",
+          "description": "解析目标岗位 JD"
+        },
+        {
+          "step": 3,
+          "skill": "star_polisher",
+          "label": "STAR 亮点打磨",
+          "description": "结合 JD 关键词打磨证书经历"
+        },
+        {
+          "step": 4,
+          "skill": "resume_writer",
+          "label": "排版导出",
+          "description": "填充 Word 模板"
+        }
+      ],
+      "output": "output/{target_role}_证书简历.docx"
+    },
     "internship_aggregator": {
       "name": "实习职位自动聚合流",
-      "description": "案例3核心流程：从岗位抓取到实习申请对比表的全自动闭环",
+      "description": "案例3：从岗位抓取到实习申请对比表",
       "trigger": "用户输入目标城市+目标岗位关键词",
       "steps": [
         {
           "step": 1,
           "skill": "job_scraper",
           "label": "跨平台岗位抓取",
-          "description": "并发抓取 BOSS、实习僧等平台的岗位列表页，自动翻页"
+          "description": "并发抓取 BOSS、实习僧等平台"
         },
         {
           "step": 2,
           "skill": "match_scorer",
           "label": "智能匹配评分",
-          "description": "对比 user_resume.json 中的用户画像，对每个岗位打出匹配分"
+          "description": "对比用户画像，对每个岗位打匹配分"
         },
         {
           "step": 3,
           "skill": "report_generator",
           "label": "生成 Excel 对比表",
-          "description": "写入 Excel，添加条件格式高亮，冻结标题行，自适应列宽"
+          "description": "写入 Excel，条件格式高亮"
         }
       ],
       "output": "output/{city}_{keyword}_实习对比表.xlsx"
+    },
+    "literature_research": {
+      "name": "全自动文献调研流",
+      "description": "典型场景：自动搜索论文 → 结构化提炼 → 生成 Word 文献综述报告",
+      "trigger": "用户输入研究主题关键词",
+      "steps": [
+        {
+          "step": 1,
+          "skill": "academic_search",
+          "label": "学术论文搜索",
+          "description": "调用 Semantic Scholar API 搜索相关论文"
+        },
+        {
+          "step": 2,
+          "skill": "paper_digest",
+          "label": "文献结构化提炼",
+          "description": "提取核心观点、方法论、结论，生成综述 Markdown"
+        },
+        {
+          "step": 3,
+          "skill": "literature_report",
+          "label": "生成 Word 文献综述报告",
+          "description": "将提炼数据生成 Word 报告（含论文表格、趋势分析、研究建议）"
+        }
+      ],
+      "output": "output/{topic}_文献综述报告.docx"
     },
     "full_job_hunting": {
       "name": "完整求职全流程",
@@ -210,28 +330,28 @@
       {
         "step": 1,
         "app": "Browser",
-        "action": "AutoClaw WebDriver 驱动浏览器抓取招聘页面，自动翻页、识别平台差异"
+        "action": "AutoClaw WebDriver 抓取招聘页面；OCR 识别证书照片"
       },
       {
         "step": 2,
         "app": "GLM (LLM)",
-        "action": "由 GLM 调度 JD Analyzer Skill 解析岗位要求；调度 Match Scorer Skill 完成语义级匹配评分；调度 STAR Polisher Skill 完成经历改写"
+        "action": "调度 JD Analyzer 解析岗位要求；STAR Polisher 改写经历；Match Scorer 语义评分；Paper Digest 文献提炼"
       },
       {
         "step": 3,
         "app": "Microsoft Excel",
-        "action": "Report Generator Skill 将结构化数据写入 Excel，应用条件格式"
+        "action": "Report Generator 写入 Excel 对比表"
       },
       {
         "step": 4,
         "app": "Microsoft Word",
-        "action": "Resume Writer Skill 将打磨后的内容填充进简历模板，导出 .docx 文件"
+        "action": "Resume Writer 生成简历；Literature Report 生成文献综述"
       }
     ]
   },
 
   "llm_dispatch_rules": {
-    "description": "GLM 调度规则：根据用户意图路由至对应 Pipeline（生产环境由 GLM 语义匹配，当前为关键词规则 Demo）",
+    "description": "GLM 调度规则：根据用户意图路由至对应 Pipeline",
     "routing": [
       {
         "intent": "简历生成",
@@ -239,9 +359,19 @@
         "pipeline": "resume_generation"
       },
       {
+        "intent": "证书简历",
+        "keywords": ["证书", "照片", "OCR", "证书识别"],
+        "pipeline": "resume_with_ocr"
+      },
+      {
         "intent": "岗位聚合",
         "keywords": ["找实习", "搜岗位", "对比表", "上海", "北京", "抓取"],
         "pipeline": "internship_aggregator"
+      },
+      {
+        "intent": "文献调研",
+        "keywords": ["文献", "论文", "调研", "学术", "研究"],
+        "pipeline": "literature_research"
       },
       {
         "intent": "完整流程",

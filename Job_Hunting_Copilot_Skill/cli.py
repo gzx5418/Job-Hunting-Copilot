@@ -1,0 +1,197 @@
+# -*- coding: utf-8 -*-
+"""
+求职智能体 - 交互式演示入口
+===================================
+  运行方式: python cli.py
+  提供菜单式交互界面，供评审直接体验各 Pipeline 的闭环能力。
+"""
+
+import os
+import sys
+
+AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, AGENT_DIR)
+
+from agent import AutoClawAgent
+
+
+def print_header():
+    print("\n" + "=" * 56)
+    print("  AutoClaw Agent -- 求职智能体  |  交互式演示")
+    print("  框架: AutoClaw  |  LLM: GLM-4-Plus  |  路径B: 原生Skill模式")
+    print("=" * 56)
+
+
+def print_menu():
+    print("\n" + "-" * 56)
+    print("  [1] 生成简历 -- 输入经历草稿 + 目标岗位 + JD")
+    print("  [2] 搜索实习 -- 输入岗位关键词 + 城市")
+    print("  [3] 文献调研 -- 输入研究主题")
+    print("  [4] 证书识别 -- 输入证书照片路径，提取经历")
+    print("  [5] 一站式全流程 -- 简历 + 岗位聚合")
+    print("  [6] 多岗位简历对比 -- 同时生成多个岗位的定制简历")
+    print("  [0] 退出")
+    print("-" * 56)
+
+
+def demo_resume(agent):
+    print("\n  [场景] 个性化简历生成（JD 定制版）")
+    target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
+    print("  请粘贴你的经历草稿（输入空行结束）:")
+    lines = []
+    while True:
+        line = input("  > ")
+        if not line:
+            break
+        lines.append(line)
+    raw_text = "\n".join(lines) if lines else (
+        "大二加入了学生会文艺部，做了一年干事，期间办了迎新晚会，"
+        "拉了2000块钱赞助，还写了几篇推文。\n\n"
+        "大三暑假去了一家互联网公司实习，主要工作是回复用户消息，"
+        "建了几个微信群，整理过各种表格。\n\n"
+        "大四参加了大创项目，我们组做了一个校园互助小程序，"
+        "我主要负责产品方向的需求整理和用户调研。"
+    )
+    print("  请粘贴目标岗位 JD（直接回车使用默认 JD）:")
+    jd_lines = []
+    while True:
+        line = input("  > ")
+        if not line:
+            break
+        jd_lines.append(line)
+    jd_text = "\n".join(jd_lines) if jd_lines else (
+        f"{target_role}岗位：本科及以上学历，沟通协调能力强，有学生干部经验优先，"
+        "熟练使用 Excel、PPT 等办公软件。具备跨部门协作经验，善于解决问题，"
+        "有领导力潜质。每周 5 天，实习 3 个月以上。"
+    )
+    result = agent.execute(
+        user_input=f"帮我生成一份针对{target_role}的简历",
+        target_role=target_role, raw_text=raw_text, jd_text=jd_text
+    )
+    _print_result(result)
+
+
+def demo_internship(agent):
+    print("\n  [场景] 行业实习职位自动聚合")
+    keyword = input("  岗位关键词 (默认: AI 产品实习): ").strip() or "AI 产品实习"
+    city = input("  目标城市 (默认: 上海): ").strip() or "上海"
+    result = agent.execute(
+        user_input=f"帮我找{city}的{keyword}",
+        keyword=keyword, city=city,
+        platforms=["zhipin", "shixiseng", "nowcoder"]
+    )
+    _print_result(result)
+
+
+def demo_literature(agent):
+    print("\n  [场景] 全自动文献调研")
+    topic = input("  研究主题 (默认: 大语言模型在教育领域的应用): ").strip() or "大语言模型在教育领域的应用"
+    result = agent.execute(
+        user_input=f"帮我调研关于「{topic}」的学术文献",
+        research_topic=topic
+    )
+    _print_result(result)
+
+
+def demo_ocr(agent):
+    print("\n  [场景] 证书照片识别与经历提取")
+    image_path = input("  证书照片路径（直接回车使用演示模式）: ").strip()
+    result = agent.execute(
+        user_input="帮我从证书照片中提取经历信息",
+        image_paths=[image_path] if image_path else [],
+        ocr_demo_mode=not image_path
+    )
+    _print_result(result)
+
+
+def demo_full(agent):
+    print("\n  [场景] 一站式全流程")
+    target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
+    keyword = input("  实习关键词 (默认: AI 产品实习): ").strip() or "AI 产品实习"
+    city = input("  目标城市 (默认: 上海): ").strip() or "上海"
+    result = agent.execute(
+        user_input="一站式帮我找工作",
+        target_role=target_role,
+        keyword=keyword, city=city,
+        platforms=["zhipin", "shixiseng"],
+        raw_text=(
+            "大二加入学生会文艺部，办了迎新晚会，拉了2000块钱赞助。"
+            "大三暑假去互联网公司实习，负责社群运营和用户反馈。"
+            "大四参加大创项目，做校园互助小程序的产品方向。"
+        ),
+        jd_text=f"{target_role}岗位要求：沟通协调能力强，有学生干部经验优先，熟练Excel/PPT。"
+    )
+    _print_result(result)
+
+
+def demo_multi_resume(agent):
+    print("\n  [场景] 多岗位简历对比生成")
+    roles_input = input("  目标岗位（逗号分隔，默认: 管培生,AI产品实习生）: ").strip()
+    roles = [r.strip() for r in roles_input.split(",")] if roles_input else ["管培生", "AI产品实习生"]
+    raw_text = (
+        "大二加入学生会文艺部，办了迎新晚会，拉了2000块钱赞助。"
+        "大三暑假去互联网公司实习，负责社群运营和用户反馈。"
+        "大四参加大创项目，做校园互助小程序的产品方向。"
+    )
+    for role in roles:
+        print(f"\n  > 正在生成 [{role}] 定制简历...")
+        result = agent.execute(
+            user_input=f"帮我生成一份针对{role}的简历",
+            target_role=role, raw_text=raw_text,
+            jd_text=f"{role}岗位：沟通协调能力强，有学生干部经验优先，熟练Excel/PPT，善于解决问题。"
+        )
+        _print_result(result)
+    print(f"\n  [完成] 共生成 {len(roles)} 份定制简历，请查看 output/ 目录")
+
+
+def _print_result(result):
+    if not result:
+        print("  [错误] 无返回结果")
+        return
+    status = result.get("status", "unknown")
+    if status == "success":
+        print(f"  [OK] 执行成功")
+        data = result.get("data", {})
+        file_path = data.get("file_path", result.get("output", ""))
+        if file_path:
+            print(f"  [FILE] 输出文件: {file_path}")
+        else:
+            print(f"  [OUTPUT] {result.get('output', '无文件输出')}")
+    elif status == "fallback":
+        print(f"  [跳过] {result.get('message', '未匹配Pipeline')}")
+    else:
+        print(f"  [错误] {result.get('message', '未知错误')}")
+
+
+def main():
+    print_header()
+    config_path = os.path.join(AGENT_DIR, "agent_config.json")
+    agent = AutoClawAgent(config_path=config_path)
+
+    handlers = {
+        "1": demo_resume,
+        "2": demo_internship,
+        "3": demo_literature,
+        "4": demo_ocr,
+        "5": demo_full,
+        "6": demo_multi_resume,
+    }
+
+    while True:
+        print_menu()
+        choice = input("\n> 请选择: ").strip()
+        if choice == "0":
+            print("\n  再见！")
+            break
+        handler = handlers.get(choice)
+        if handler:
+            try:
+                handler(agent)
+            except Exception as e:
+                print(f"  [异常] {e}")
+        else:
+            print("  无效选择，请重新输入")
+
+
+if __name__ == "__main__":
+    main()
