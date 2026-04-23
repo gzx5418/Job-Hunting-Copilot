@@ -1,0 +1,264 @@
+{
+  "agent_meta": {
+    "name": "求职智能体",
+    "version": "3.0.0",
+    "framework": "AutoClaw",
+    "llm_backend": "GLM-4-Plus",
+    "description": "围绕学生学习生活与职业发展的全自动求职智能体，支持跨应用协作（浏览器 → Excel → Word）",
+    "author": "AutoClaw Framework",
+    "architecture": "路径B：原生 Skill 模式 | GLM 调度 + AutoClaw 执行 + Skill 原子能力"
+  },
+
+  "skill_registry": {
+    "jd_analyzer": {
+      "module": "skills.jd_analyzer",
+      "class": "JDAnalyzerSkill",
+      "description": "JD 分析 Skill：从岗位 JD 文本中提取硬技能、软素质、学历、出勤要求，为简历定制和匹配评分提供结构化 JD 洞察。",
+      "input_schema": {
+        "jd_text": "string",
+        "target_role": "string"
+      },
+      "output_schema": {
+        "jd_keywords": "list[string]",
+        "jd_hard_skills": "list[string]",
+        "jd_soft_skills": "list[string]",
+        "jd_degree_req": "string",
+        "jd_summary": "string"
+      },
+      "trigger_phrases": ["分析JD", "岗位要求", "这个岗位需要什么"]
+    },
+    "experience_extractor": {
+      "module": "skills.experience_extractor",
+      "class": "ExperienceExtractorSkill",
+      "description": "经历萃取 Skill：从非结构化文本/草稿/证书描述中，提取时间、角色、核心成就，结构化为标准数据。",
+      "input_schema": {
+        "raw_text": "string",
+        "target_role": "string"
+      },
+      "output_schema": {
+        "experiences": "list[ExperienceItem]"
+      },
+      "trigger_phrases": ["帮我整理经历", "提取我的经历", "这是我的草稿"]
+    },
+    "star_polisher": {
+      "module": "skills.star_polisher",
+      "class": "StarPolisherSkill",
+      "description": "亮点打磨 Skill：按照 STAR 原则重构经历描述，结合 JD 关键词精准覆盖，输出职业感强的 Markdown。",
+      "input_schema": {
+        "experiences": "list[ExperienceItem]",
+        "target_role": "string",
+        "jd_keywords": "list[string]"
+      },
+      "output_schema": {
+        "polished_md": "string",
+        "keyword_coverage": "float"
+      },
+      "trigger_phrases": ["润色简历", "用STAR重写", "让我的经历更职业"],
+      "glm_delegation": "STAR 改写属语义密集型任务，生产环境由 GLM 完成语义级重构；当前为规则引擎 Demo 实现"
+    },
+    "resume_writer": {
+      "module": "skills.resume_writer",
+      "class": "ResumeWriterSkill",
+      "description": "排版适配 Skill：将处理好的内容自动填充进预设的标准化简历模板，导出 Word 文件到本地。",
+      "input_schema": {
+        "polished_md": "string",
+        "user_profile": "UserProfile",
+        "target_role": "string"
+      },
+      "output_schema": {
+        "file_path": "string",
+        "status": "string"
+      },
+      "trigger_phrases": ["生成简历", "导出Word", "帮我写成简历文件"],
+      "cross_app": {
+        "write_to": "Microsoft Word (.docx)",
+        "output_dir": "output/"
+      }
+    },
+    "job_scraper": {
+      "module": "skills.web_job_scraper",
+      "class": "JobScraperSkill",
+      "description": "数据抓取 Skill：驱动 AutoClaw WebDriver 自动翻页，抓取特定岗位的薪资、地点、JD要求，支持跨平台并发。",
+      "input_schema": {
+        "keyword": "string",
+        "city": "string",
+        "platforms": "list[string]",
+        "max_pages": "integer"
+      },
+      "output_schema": {
+        "jobs": "list[JobItem]",
+        "total_count": "integer"
+      },
+      "trigger_phrases": ["帮我找实习", "搜索岗位", "抓取招聘信息"],
+      "cross_app": {
+        "read_from": "Browser (zhipin.com, shixiseng.com, etc.)",
+        "tool": "AutoClaw_WebDriver / MCP_WebReader"
+      }
+    },
+    "match_scorer": {
+      "module": "skills.match_scorer",
+      "class": "MatchScorerSkill",
+      "description": "匹配评分 Skill：根据用户简历 Profile 中的技能、意向城市、出勤时间，对抓取的岗位进行 0~100 分评分。",
+      "input_schema": {
+        "jobs": "list[JobItem]",
+        "user_profile": "UserProfile"
+      },
+      "output_schema": {
+        "scored_jobs": "list[ScoredJobItem]"
+      },
+      "trigger_phrases": ["哪个岗位更适合我", "帮我打分", "筛选岗位"],
+      "glm_delegation": "JD 匹配属语义密集型任务，生产环境由 GLM 完成语义级评分；当前为规则引擎 Demo 实现"
+    },
+    "report_generator": {
+      "module": "skills.report_generator",
+      "class": "ReportGeneratorSkill",
+      "description": "跨应用写数 Skill：将评分后的岗位数据，按规范格式写入 Excel 对比表（含条件格式、冻结行、匹配色）。",
+      "input_schema": {
+        "scored_jobs": "list[ScoredJobItem]",
+        "output_path": "string"
+      },
+      "output_schema": {
+        "file_path": "string",
+        "status": "string"
+      },
+      "trigger_phrases": ["生成对比表", "导出Excel", "给我一个分析报告"],
+      "cross_app": {
+        "write_to": "Microsoft Excel (.xlsx)",
+        "output_dir": "output/"
+      }
+    }
+  },
+
+  "task_pipelines": {
+    "resume_generation": {
+      "name": "个性化简历生成流（JD 定制）",
+      "description": "案例2核心流程：从经历草稿 → JD 分析 → STAR 打磨 → Word 简历的全自动闭环",
+      "trigger": "用户提供非结构化经历草稿 + 目标岗位 JD（或岗位名称），生成针对性简历",
+      "steps": [
+        {
+          "step": 1,
+          "skill": "jd_analyzer",
+          "label": "JD 分析与关键词提取",
+          "description": "解析目标岗位 JD，提取硬技能、软素质、学历要求"
+        },
+        {
+          "step": 2,
+          "skill": "experience_extractor",
+          "label": "经历萃取",
+          "description": "解析原始草稿，提取时间、角色、关键行为"
+        },
+        {
+          "step": 3,
+          "skill": "star_polisher",
+          "label": "STAR 亮点打磨（JD 定制）",
+          "description": "结合 JD 关键词，用 STAR 原则重构每条经历，优先排列与 JD 匹配的经历"
+        },
+        {
+          "step": 4,
+          "skill": "resume_writer",
+          "label": "排版适配与导出",
+          "description": "填充 Word 模板，保存至 output/ 目录"
+        }
+      ],
+      "output": "output/{target_role}_定向简历.docx"
+    },
+    "internship_aggregator": {
+      "name": "实习职位自动聚合流",
+      "description": "案例3核心流程：从岗位抓取到实习申请对比表的全自动闭环",
+      "trigger": "用户输入目标城市+目标岗位关键词",
+      "steps": [
+        {
+          "step": 1,
+          "skill": "job_scraper",
+          "label": "跨平台岗位抓取",
+          "description": "并发抓取 BOSS、实习僧等平台的岗位列表页，自动翻页"
+        },
+        {
+          "step": 2,
+          "skill": "match_scorer",
+          "label": "智能匹配评分",
+          "description": "对比 user_resume.json 中的用户画像，对每个岗位打出匹配分"
+        },
+        {
+          "step": 3,
+          "skill": "report_generator",
+          "label": "生成 Excel 对比表",
+          "description": "写入 Excel，添加条件格式高亮，冻结标题行，自适应列宽"
+        }
+      ],
+      "output": "output/{city}_{keyword}_实习对比表.xlsx"
+    },
+    "full_job_hunting": {
+      "name": "完整求职全流程",
+      "description": "一键完成简历生成 + 岗位聚合的完整链路",
+      "trigger": "用户希望一站式完成简历与岗位匹配",
+      "fail_fast": false,
+      "steps": [
+        { "step": 1, "pipeline": "resume_generation" },
+        { "step": 2, "pipeline": "internship_aggregator" }
+      ],
+      "output": [
+        "output/{target_role}_定向简历.docx",
+        "output/{city}_{keyword}_实习对比表.xlsx"
+      ]
+    }
+  },
+
+  "cross_app_workflow": {
+    "description": "跨应用协作链路（Browser → GLM → Excel → Word）",
+    "chain": [
+      {
+        "step": 1,
+        "app": "Browser",
+        "action": "AutoClaw WebDriver 驱动浏览器抓取招聘页面，自动翻页、识别平台差异"
+      },
+      {
+        "step": 2,
+        "app": "GLM (LLM)",
+        "action": "由 GLM 调度 JD Analyzer Skill 解析岗位要求；调度 Match Scorer Skill 完成语义级匹配评分；调度 STAR Polisher Skill 完成经历改写"
+      },
+      {
+        "step": 3,
+        "app": "Microsoft Excel",
+        "action": "Report Generator Skill 将结构化数据写入 Excel，应用条件格式"
+      },
+      {
+        "step": 4,
+        "app": "Microsoft Word",
+        "action": "Resume Writer Skill 将打磨后的内容填充进简历模板，导出 .docx 文件"
+      }
+    ]
+  },
+
+  "llm_dispatch_rules": {
+    "description": "GLM 调度规则：根据用户意图路由至对应 Pipeline（生产环境由 GLM 语义匹配，当前为关键词规则 Demo）",
+    "routing": [
+      {
+        "intent": "简历生成",
+        "keywords": ["写简历", "生成简历", "经历草稿", "管培生", "校招", "JD", "岗位要求"],
+        "pipeline": "resume_generation"
+      },
+      {
+        "intent": "岗位聚合",
+        "keywords": ["找实习", "搜岗位", "对比表", "上海", "北京", "抓取"],
+        "pipeline": "internship_aggregator"
+      },
+      {
+        "intent": "完整流程",
+        "keywords": ["一站式", "帮我找工作", "全套", "完整流程"],
+        "pipeline": "full_job_hunting"
+      }
+    ],
+    "fallback": "由 GLM 直接回答，不触发 Pipeline"
+  },
+
+  "runtime_settings": {
+    "output_dir": "output/",
+    "assets_dir": "assets/",
+    "user_profile_path": "assets/user_resume.json",
+    "log_level": "INFO",
+    "max_concurrent_scrape": 3,
+    "request_delay_ms": 1500,
+    "supported_platforms": ["zhipin", "shixiseng", "nowcoder", "liepin", "lagou"]
+  }
+}

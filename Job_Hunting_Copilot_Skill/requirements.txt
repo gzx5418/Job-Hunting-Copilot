@@ -1,0 +1,22 @@
+# ============================================================
+# 求职智能体 — 依赖清单 (requirements.txt)
+# 框架: AutoClaw  |  LLM: GLM-4-Plus
+# ============================================================
+
+# ── 核心数据处理 ──
+pandas>=1.5.0               # 数据整理与 DataFrame 操作
+openpyxl>=3.0.10            # Excel (.xlsx) 文件读写与格式化
+
+# ── 文档生成 ──
+python-docx>=0.8.11         # Word (.docx) 简历文件生成
+
+# ── 网络请求（发布到真实抓取环境时启用）──
+# requests>=2.28.0          # HTTP 请求（用于 API 调用）
+# beautifulsoup4>=4.11.0    # HTML 解析（辅助 WebDriver）
+# selenium>=4.8.0           # AutoClaw WebDriver 驱动器
+
+# ── GLM API 集成（连接 GLM-4-Plus 时启用）──
+# zhipuai>=2.0.1            # 智谱 AI GLM API SDK
+
+# ── 开发与测试 ──
+# pytest>=7.0.0             # 单元测试
