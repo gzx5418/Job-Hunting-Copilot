@@ -1,0 +1,31 @@
+{
+  "role": "AI产品实习生",
+  "industry": "互联网/AI",
+  "core_dimensions": {
+    "product_thinking": {"weight": 0.30, "description": "产品思维、用户需求洞察、需求优先级判断"},
+    "ai_understanding": {"weight": 0.25, "description": "LLM原理理解、Prompt调优、AI能力边界认知"},
+    "data_analysis": {"weight": 0.20, "description": "数据驱动、A/B测试、用户行为分析"},
+    "communication": {"weight": 0.15, "description": "PRD撰写、跨团队协作、向上沟通"},
+    "execution": {"weight": 0.10, "description": "项目推进、原型设计、迭代节奏把控"}
+  },
+  "hard_skills": ["Axure/Figma", "SQL", "Prompt Engineering", "Python基础", "A/B测试"],
+  "soft_skills": ["用户同理心", "逻辑思维", "好奇心", "抗压能力", "沟通表达"],
+  "degree_req": "本科及以上",
+  "interview_questions": {
+    "behavioral": [
+      {"q": "请描述一个你从用户反馈中发现产品问题的经历", "dimension": "product_thinking", "difficulty": "mid"},
+      {"q": "讲述一次你使用AI工具（如ChatGPT）解决实际问题的经历", "dimension": "ai_understanding", "difficulty": "junior"},
+      {"q": "举例说明你如何在团队中推动一个有争议的产品方案", "dimension": "communication", "difficulty": "senior"}
+    ],
+    "technical": [
+      {"q": "请解释大语言模型（LLM）的工作原理，以及它在产品中的应用场景", "dimension": "ai_understanding", "difficulty": "mid"},
+      {"q": "如果让你设计一个AI对话产品的Prompt策略，你会怎么设计？", "dimension": "ai_understanding", "difficulty": "senior"},
+      {"q": "如何设计一个A/B测试来验证一个AI功能的效果？", "dimension": "data_analysis", "difficulty": "mid"},
+      {"q": "请描述PRD文档中你最关注的几个核心要素", "dimension": "product_thinking", "difficulty": "junior"}
+    ],
+    "comprehensive": [
+      {"q": "如果你负责一款AI学习助手产品，你会如何定义MVP？", "dimension": "product_thinking", "difficulty": "senior"},
+      {"q": "AI产品经理和传统产品经理最大的区别是什么？", "dimension": "ai_understanding", "difficulty": "mid"}
+    ]
+  }
+}

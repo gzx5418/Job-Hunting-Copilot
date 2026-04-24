@@ -1,0 +1,30 @@
+{
+  "role": "市场营销",
+  "industry": "互联网/快消/广告",
+  "core_dimensions": {
+    "market_insight": {"weight": 0.30, "description": "市场洞察、竞品分析、用户画像理解"},
+    "content_creation": {"weight": 0.25, "description": "文案撰写、内容策划、社媒运营"},
+    "data_driven": {"weight": 0.20, "description": "投放数据分析、ROI优化、效果归因"},
+    "communication": {"weight": 0.15, "description": "跨部门协作、供应商管理、品牌调性把控"},
+    "creativity": {"weight": 0.10, "description": "创意策划、活动设计、热点敏感度"}
+  },
+  "hard_skills": ["数据分析", "Excel", "PPT", "PS/Canva", "社媒平台运营"],
+  "soft_skills": ["创意思维", "用户同理心", "执行力", "沟通能力", "抗压能力"],
+  "degree_req": "本科及以上",
+  "interview_questions": {
+    "behavioral": [
+      {"q": "描述一个你策划并执行的营销活动，结果如何？", "dimension": "content_creation", "difficulty": "mid"},
+      {"q": "讲述一次你通过数据分析优化营销投放策略的经历", "dimension": "data_driven", "difficulty": "senior"},
+      {"q": "举例说明你如何快速了解一个新行业的市场格局", "dimension": "market_insight", "difficulty": "mid"}
+    ],
+    "technical": [
+      {"q": "如果给你10万预算推广一款面向大学生的APP，你会怎么分配？", "dimension": "data_driven", "difficulty": "senior"},
+      {"q": "请分析一个你最近看到的优秀营销案例，它好在哪里？", "dimension": "creativity", "difficulty": "mid"},
+      {"q": "如何衡量一次品牌传播活动的效果？你会关注哪些指标？", "dimension": "data_driven", "difficulty": "mid"}
+    ],
+    "comprehensive": [
+      {"q": "如果你的品牌在社交媒体上遭遇了负面舆情，你会如何应对？", "dimension": "communication", "difficulty": "senior"},
+      {"q": "你认为AI将如何改变营销行业？你会如何利用AI工具提升工作效率？", "dimension": "creativity", "difficulty": "mid"}
+    ]
+  }
+}

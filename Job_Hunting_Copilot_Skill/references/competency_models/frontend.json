@@ -1,0 +1,31 @@
+{
+  "role": "前端开发",
+  "industry": "互联网/科技",
+  "core_dimensions": {
+    "coding": {"weight": 0.35, "description": "HTML/CSS/JS/TS基础、React/Vue框架、编码规范"},
+    "engineering": {"weight": 0.25, "description": "组件设计、状态管理、性能优化、工程化实践"},
+    "problem_solving": {"weight": 0.20, "description": "调试能力、问题定位、技术选型"},
+    "collaboration": {"weight": 0.10, "description": "与设计/后端协作、Code Review、文档编写"},
+    "learning": {"weight": 0.10, "description": "新技术学习、前端趋势关注、开源贡献"}
+  },
+  "hard_skills": ["HTML/CSS", "JavaScript/TypeScript", "React/Vue", "Git", "Webpack/Vite"],
+  "soft_skills": ["代码洁癖", "用户思维", "沟通协作", "持续学习", "问题排查"],
+  "degree_req": "本科及以上，计算机相关专业优先",
+  "interview_questions": {
+    "behavioral": [
+      {"q": "描述一个你参与的前端项目，你负责哪些核心模块？", "dimension": "coding", "difficulty": "junior"},
+      {"q": "讲述一次你解决前端性能问题的经历", "dimension": "engineering", "difficulty": "senior"},
+      {"q": "举例说明你如何与设计师沟通解决UI还原度问题", "dimension": "collaboration", "difficulty": "mid"}
+    ],
+    "technical": [
+      {"q": "请解释React中useState和useEffect的工作原理", "dimension": "coding", "difficulty": "mid"},
+      {"q": "什么是虚拟DOM？它解决了什么问题？", "dimension": "engineering", "difficulty": "junior"},
+      {"q": "如何优化一个首屏加载时间过长的SPA应用？", "dimension": "engineering", "difficulty": "senior"},
+      {"q": "请解释CSS中BFC的概念及其应用场景", "dimension": "coding", "difficulty": "mid"}
+    ],
+    "comprehensive": [
+      {"q": "如果让你从零搭建一个前端项目，你会选择什么技术栈？为什么？", "dimension": "problem_solving", "difficulty": "senior"},
+      {"q": "TypeScript相比JavaScript有哪些优势？什么场景下你建议使用TS？", "dimension": "coding", "difficulty": "mid"}
+    ]
+  }
+}

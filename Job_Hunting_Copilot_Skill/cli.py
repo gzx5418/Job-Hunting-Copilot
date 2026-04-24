@@ -30,6 +30,8 @@ def print_menu():
     print("  [4] 证书识别 -- 输入证书照片路径，提取经历")
     print("  [5] 一站式全流程 -- 简历 + 岗位聚合")
     print("  [6] 多岗位简历对比 -- 同时生成多个岗位的定制简历")
+    print("  [7] 模拟面试 -- 输入目标岗位，生成面试题并评估")
+    print("  [8] 简历+面试一站式 -- 生成简历后自动进入面试练习")
     print("  [0] 退出")
     print("-" * 56)
 
@@ -146,6 +148,91 @@ def run_multi_resume(agent):
     print(f"\n  [完成] 共生成 {len(roles)} 份定制简历，请查看 output/ 目录")
 
 
+def run_interview(agent):
+    print("\n  [场景] 模拟面试练习")
+    target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
+    interview_type = input("  面试类型 (behavioral/technical/comprehensive，默认: comprehensive): ").strip() or "comprehensive"
+    num_questions = int(input("  题目数量 (默认: 5): ").strip() or "5")
+
+    print(f"\n  > 正在为 [{target_role}] 岗位生成面试题...")
+    q_result = agent.execute(
+        user_input=f"帮我准备{target_role}的面试",
+        target_role=target_role,
+        interview_type=interview_type,
+        num_questions=num_questions
+    )
+
+    if q_result.get("status") != "success":
+        _print_result(q_result)
+        return
+
+    questions = q_result.get("data", {}).get("questions", [])
+    if not questions:
+        print("  [错误] 未生成面试题")
+        return
+
+    print(f"\n  生成了 {len(questions)} 道面试题，请逐一回答：\n")
+
+    interview_results = []
+    for q in questions:
+        print(f"  Q{q['id']}: {q['question']}")
+        print(f"    [类型: {q['type']} | 难度: {q['difficulty']} | 考察: {q['dimension']}]")
+        answer = input("  你的回答: ").strip()
+        if not answer:
+            print("  [跳过] 未输入回答")
+            continue
+
+        score_result = agent.skill_instances.get("interview_scorer")
+        if score_result:
+            try:
+                eval_result = score_result.run(
+                    question=q["question"],
+                    answer=answer,
+                    reference_points=q.get("reference_points", []),
+                    target_role=target_role
+                )
+                if eval_result.get("status") == "success":
+                    score_data = eval_result["data"]
+                    print(f"    → 得分: {score_data['score']}/100 (等级 {score_data['tier']})")
+                    for fb in score_data.get("feedback", [])[:2]:
+                        print(f"    → {fb}")
+                    interview_results.append({
+                        "id": q["id"],
+                        "question": q["question"],
+                        "answer": answer,
+                        "score_data": score_data
+                    })
+            except Exception as e:
+                print(f"    [评估异常] {e}")
+
+    if interview_results:
+        print(f"\n  > 正在生成面试练习报告...")
+        report_result = agent.execute(
+            user_input="生成面试练习报告",
+            target_role=target_role,
+            interview_results=interview_results
+        )
+        _print_result(report_result)
+    else:
+        print("\n  [完成] 未收集到有效回答，跳过报告生成")
+
+
+def run_resume_interview(agent):
+    print("\n  [场景] 简历 + 面试一站式")
+    target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
+    result = agent.execute(
+        user_input=f"简历面试一站式准备{target_role}",
+        target_role=target_role,
+        raw_text=(
+            "大二加入学生会文艺部，办了迎新晚会，拉了2000块钱赞助。"
+            "大三暑假去互联网公司实习，负责社群运营和用户反馈。"
+            "大四参加大创项目，做校园互助小程序的产品方向。"
+        ),
+        jd_text=f"{target_role}岗位要求：沟通协调能力强，有学生干部经验优先，熟练Excel/PPT。"
+    )
+    _print_result(result)
+
+
 def _print_result(result):
     if not result:
         print("  [错误] 无返回结果")
@@ -177,6 +264,8 @@ def main():
         "4": run_ocr,
         "5": run_full,
         "6": run_multi_resume,
+        "7": run_interview,
+        "8": run_resume_interview,
     }
 
     while True:

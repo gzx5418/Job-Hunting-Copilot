@@ -1,0 +1,31 @@
+{
+  "role": "后端开发",
+  "industry": "互联网/科技",
+  "core_dimensions": {
+    "coding": {"weight": 0.30, "description": "Java/Python/Go基础、数据结构与算法、设计模式"},
+    "system_design": {"weight": 0.25, "description": "分布式系统、高并发、微服务架构"},
+    "database": {"weight": 0.20, "description": "SQL优化、数据库设计、缓存策略"},
+    "problem_solving": {"weight": 0.15, "description": "线上问题排查、性能调优、系统稳定性"},
+    "collaboration": {"weight": 0.10, "description": "API设计、跨团队协作、技术文档"}
+  },
+  "hard_skills": ["Java/Python/Go", "MySQL", "Redis", "Spring/Django/Gin", "Linux"],
+  "soft_skills": ["系统思维", "代码质量意识", "问题排查能力", "团队协作", "技术热情"],
+  "degree_req": "本科及以上，计算机相关专业优先",
+  "interview_questions": {
+    "behavioral": [
+      {"q": "描述一个你独立负责的后端模块，你如何设计它的架构？", "dimension": "system_design", "difficulty": "senior"},
+      {"q": "讲述一次你处理线上紧急故障的经历", "dimension": "problem_solving", "difficulty": "senior"},
+      {"q": "举例说明你如何优化一个慢查询SQL", "dimension": "database", "difficulty": "mid"}
+    ],
+    "technical": [
+      {"q": "请解释HTTP和HTTPS的区别，HTTPS是如何保证安全的？", "dimension": "coding", "difficulty": "junior"},
+      {"q": "什么是CAP定理？在实际系统中如何权衡？", "dimension": "system_design", "difficulty": "mid"},
+      {"q": "Redis有哪些数据结构？分别适用于什么场景？", "dimension": "database", "difficulty": "mid"},
+      {"q": "请设计一个短链接服务的系统架构", "dimension": "system_design", "difficulty": "senior"}
+    ],
+    "comprehensive": [
+      {"q": "如果系统QPS突然增长10倍，你会从哪些层面进行优化？", "dimension": "system_design", "difficulty": "senior"},
+      {"q": "微服务架构和单体架构各有什么优劣？什么场景下应该选择哪种？", "dimension": "system_design", "difficulty": "senior"}
+    ]
+  }
+}

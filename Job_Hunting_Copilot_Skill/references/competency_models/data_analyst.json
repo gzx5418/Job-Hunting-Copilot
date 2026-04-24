@@ -1,0 +1,31 @@
+{
+  "role": "数据分析",
+  "industry": "互联网/金融",
+  "core_dimensions": {
+    "statistical_thinking": {"weight": 0.30, "description": "统计学基础、假设检验、因果推断"},
+    "data_processing": {"weight": 0.25, "description": "SQL/Python数据处理、ETL、数据清洗"},
+    "business_insight": {"weight": 0.25, "description": "业务理解、指标体系搭建、洞察输出"},
+    "visualization": {"weight": 0.10, "description": "数据可视化、报告撰写、故事化表达"},
+    "communication": {"weight": 0.10, "description": "跨团队协作、需求理解、结果呈现"}
+  },
+  "hard_skills": ["SQL", "Python(Pandas)", "Excel", "Tableau/PowerBI", "统计学"],
+  "soft_skills": ["逻辑思维", "业务敏感度", "细节导向", "沟通表达", "好奇心"],
+  "degree_req": "本科及以上，统计/数学/计算机优先",
+  "interview_questions": {
+    "behavioral": [
+      {"q": "描述一个你通过数据分析发现业务问题的经历", "dimension": "business_insight", "difficulty": "mid"},
+      {"q": "讲述一次你需要从多个数据源整合数据完成分析的经历", "dimension": "data_processing", "difficulty": "mid"},
+      {"q": "举例说明你如何将复杂的数据分析结果向非技术人员解释", "dimension": "communication", "difficulty": "senior"}
+    ],
+    "technical": [
+      {"q": "请解释什么是A/B测试，如何确定样本量和显著性水平？", "dimension": "statistical_thinking", "difficulty": "mid"},
+      {"q": "如果DAU突然下降20%，你会怎么排查原因？", "dimension": "business_insight", "difficulty": "senior"},
+      {"q": "请写一个SQL查询，找出每个月留存率最高的用户群体特征", "dimension": "data_processing", "difficulty": "senior"},
+      {"q": "什么是混淆变量？如何在分析中控制它？", "dimension": "statistical_thinking", "difficulty": "mid"}
+    ],
+    "comprehensive": [
+      {"q": "如果让你为电商APP搭建一套核心指标体系，你会怎么设计？", "dimension": "business_insight", "difficulty": "senior"},
+      {"q": "数据分析师和数据科学家最大的区别是什么？你更倾向哪个方向？", "dimension": "statistical_thinking", "difficulty": "junior"}
+    ]
+  }
+}

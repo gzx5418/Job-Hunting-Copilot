@@ -1,10 +1,10 @@
 {
   "agent_meta": {
     "name": "求职智能体",
-    "version": "4.0.0",
+    "version": "5.0.0",
     "framework": "AutoClaw",
     "llm_backend": "GLM-4-Plus",
-    "description": "围绕学生学习生活与职业发展的全自动求职智能体，支持跨应用协作（浏览器 → Excel → Word）",
+    "description": "围绕学生学习生活与职业发展的全自动求职智能体，支持跨应用协作（浏览器 → Excel → Word），含模拟面试评估",
     "author": "AutoClaw Framework",
     "architecture": "路径B：原生 Skill 模式 | GLM 调度 + AutoClaw 执行 + Skill 原子能力"
   },
@@ -187,6 +187,62 @@
         "write_to": "Microsoft Word (.docx)",
         "output_dir": "output/"
       }
+    },
+    "interview_questioner": {
+      "module": "skills.interview_questioner",
+      "class": "InterviewQuestionerSkill",
+      "description": "面试出题 Skill：根据目标岗位能力模型，生成结构化面试题（技术/行为/综合）。",
+      "input_schema": {
+        "target_role": "string",
+        "resume_data": "string",
+        "interview_type": "string",
+        "num_questions": "integer"
+      },
+      "output_schema": {
+        "questions": "list[InterviewQuestion]",
+        "total_count": "integer"
+      },
+      "trigger_phrases": ["面试题", "模拟面试", "帮我准备面试", "出题"],
+      "glm_delegation": "面试出题属语义密集型任务，生产环境由 GLM 完成"
+    },
+    "interview_scorer": {
+      "module": "skills.interview_scorer",
+      "class": "InterviewScorerSkill",
+      "description": "面试评估 Skill：四维评分体系（完整度/条理性/STAR/关键词），输出改进建议与示范回答。",
+      "input_schema": {
+        "question": "string",
+        "answer": "string",
+        "reference_points": "list[string]",
+        "target_role": "string"
+      },
+      "output_schema": {
+        "score": "integer",
+        "tier": "string",
+        "dimensions": "dict",
+        "feedback": "list[string]",
+        "improved_answer": "string"
+      },
+      "trigger_phrases": ["评估回答", "帮我打分", "面试评分"],
+      "glm_delegation": "面试评估属语义密集型任务，生产环境由 GLM 完成"
+    },
+    "interview_report": {
+      "module": "skills.interview_report",
+      "class": "InterviewReportSkill",
+      "description": "面试报告 Skill：汇总问答与评分数据，生成 Word 练习报告（含维度分析、改进建议）。",
+      "input_schema": {
+        "interview_results": "list[InterviewResult]",
+        "target_role": "string",
+        "output_path": "string"
+      },
+      "output_schema": {
+        "file_path": "string",
+        "summary": "dict"
+      },
+      "trigger_phrases": ["生成面试报告", "面试练习报告"],
+      "cross_app": {
+        "write_to": "Microsoft Word (.docx)",
+        "output_dir": "output/"
+      }
     }
   },
 
@@ -320,6 +376,46 @@
         "output/{target_role}_定向简历.docx",
         "output/{city}_{keyword}_实习对比表.xlsx"
       ]
+    },
+    "interview_practice": {
+      "name": "模拟面试练习流",
+      "description": "根据目标岗位生成面试题 → 用户作答 → 评估反馈 → 生成报告",
+      "trigger": "用户输入目标岗位，要求面试练习",
+      "steps": [
+        {
+          "step": 1,
+          "skill": "interview_questioner",
+          "label": "面试题生成",
+          "description": "基于岗位能力模型生成结构化面试题"
+        },
+        {
+          "step": 2,
+          "skill": "interview_scorer",
+          "label": "回答评估",
+          "description": "四维评分体系评估面试回答"
+        },
+        {
+          "step": 3,
+          "skill": "interview_report",
+          "label": "面试报告生成",
+          "description": "汇总评分，生成 Word 练习报告"
+        }
+      ],
+      "output": "output/{target_role}_面试练习报告.docx"
+    },
+    "resume_and_interview": {
+      "name": "简历 + 面试一站式",
+      "description": "先生成简历，再基于简历内容进行面试练习",
+      "trigger": "用户希望一站式完成简历与面试准备",
+      "fail_fast": false,
+      "steps": [
+        { "step": 1, "pipeline": "resume_generation" },
+        { "step": 2, "pipeline": "interview_practice" }
+      ],
+      "output": [
+        "output/{target_role}_定向简历.docx",
+        "output/{target_role}_面试练习报告.docx"
+      ]
     }
   },
 
@@ -376,6 +472,16 @@
         "intent": "完整流程",
         "keywords": ["一站式", "帮我找工作", "全套", "完整流程"],
         "pipeline": "full_job_hunting"
+      },
+      {
+        "intent": "面试练习",
+        "keywords": ["面试", "模拟面试", "面经", "面试题", "面试准备", "面试练习"],
+        "pipeline": "interview_practice"
+      },
+      {
+        "intent": "简历面试一站式",
+        "keywords": ["简历面试", "全套准备", "简历加面试"],
+        "pipeline": "resume_and_interview"
       }
     ],
     "fallback": "由 GLM 直接回答，不触发 Pipeline"
