@@ -59,7 +59,7 @@ class LiteratureReportSkill(AutoClawSkill):
         )
         os.makedirs(output_dir, exist_ok=True)
 
-        safe_topic = topic.replace(" ", "_").replace("/", "_")[:30] if topic else "文献综述"
+        safe_topic = re.sub(r'[^\w\u4e00-\u9fff\-]', '_', topic)[:30] if topic else "文献综述"
         output_path = os.path.join(output_dir, f"{safe_topic}_文献综述报告.docx")
 
         if not DOCX_AVAILABLE:

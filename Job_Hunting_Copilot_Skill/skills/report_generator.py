@@ -87,9 +87,11 @@ class ReportGeneratorSkill(AutoClawSkill):
 
         self._write_excel(scored_jobs, output_path)
 
+        formatted = OPENPYXL_AVAILABLE
         return self._success(
-            data={"file_path": output_path, "job_count": len(scored_jobs)},
+            data={"file_path": output_path, "job_count": len(scored_jobs), "formatted": formatted},
             message=f"Excel 对比表已生成：{output_path}（共 {len(scored_jobs)} 个岗位）"
+                    + ("" if formatted else "（未格式化，需安装 openpyxl）")
         )
 
     def _write_excel(self, jobs: List[Dict], output_path: str):

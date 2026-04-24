@@ -102,15 +102,7 @@ def main():
                   ["openpyxl", ">=3.0.10", "MIT",
                    "Excel 文件格式化（条件格式、冻结行、自适应列宽）"],
                   ["python-docx", ">=0.8.11", "MIT",
-                   "Word 简历文件生成（页面布局、样式渲染）"],
-                  ["requests", ">=2.28.0", "Apache 2.0",
-                   "HTTP 请求（已集成，用于 API 调用与页面抓取）"],
-                  ["beautifulsoup4", ">=4.11.0", "MIT",
-                   "HTML 解析（已集成，辅助 WebDriver 抓取结果解析）"],
-                  ["selenium", ">=4.8.0", "Apache 2.0",
-                   "浏览器自动化（已集成，AutoClaw WebDriver 驱动器）"],
-                  ["zhipuai", ">=2.0.1", "MIT",
-                   "智谱 AI GLM SDK（已集成，接入 GLM-4-Plus）"],
+                   "Word 简历文件 / 面试报告生成（页面布局、样式渲染）"],
               ],
               col_widths=[3, 2.5, 3, 7.5])
 

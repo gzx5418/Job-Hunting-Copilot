@@ -151,7 +151,7 @@ class MatchScorerSkill(AutoClawSkill):
         degree = education.get("degree", "")
         if "硕士" in req_text or "研究生" in req_text:
             bg_score = 20 if any(d in degree for d in ["硕士", "研究生", "研一", "研二"]) else 8
-        if "本科" in req_text:
+        elif "本科" in req_text:
             bg_score = 20
 
         # ── 总分计算 ──

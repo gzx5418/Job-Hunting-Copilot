@@ -143,7 +143,7 @@
     "academic_search": {
       "module": "skills.academic_search",
       "class": "AcademicSearchSkill",
-      "description": "学术搜索 Skill：调用 Semantic Scholar API 搜索论文，返回标题、作者、摘要、引用数。",
+      "description": "学术搜索 Skill：通过 AutoClaw MCP_WebReader 搜索学术论文，返回标题、作者、摘要、引用数。",
       "input_schema": {
         "research_topic": "string",
         "max_results": "integer"
@@ -346,7 +346,7 @@
           "step": 1,
           "skill": "academic_search",
           "label": "学术论文搜索",
-          "description": "调用 Semantic Scholar API 搜索相关论文"
+          "description": "通过 AutoClaw MCP_WebReader 搜索相关论文"
         },
         {
           "step": 2,
@@ -379,26 +379,15 @@
     },
     "interview_practice": {
       "name": "模拟面试练习流",
-      "description": "根据目标岗位生成面试题 → 用户作答 → 评估反馈 → 生成报告",
+      "description": "根据目标岗位生成面试题 → 用户作答 → 评估反馈 → 生成报告（需交互式执行）",
       "trigger": "用户输入目标岗位，要求面试练习",
+      "interactive": true,
       "steps": [
         {
           "step": 1,
           "skill": "interview_questioner",
           "label": "面试题生成",
           "description": "基于岗位能力模型生成结构化面试题"
-        },
-        {
-          "step": 2,
-          "skill": "interview_scorer",
-          "label": "回答评估",
-          "description": "四维评分体系评估面试回答"
-        },
-        {
-          "step": 3,
-          "skill": "interview_report",
-          "label": "面试报告生成",
-          "description": "汇总评分，生成 Word 练习报告"
         }
       ],
       "output": "output/{target_role}_面试练习报告.docx"

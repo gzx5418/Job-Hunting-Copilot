@@ -180,16 +180,15 @@ class JDAnalyzerSkill(AutoClawSkill):
                     result["full_time"] = True
                 elif key == "internship":
                     result["internship"] = True
-        if result:
-            parts = []
-            if "days_per_week" in result:
-                parts.append(f"每周{result['days_per_week']}天")
-            if "months" in result:
-                parts.append(f"至少{result['months']}个月")
-            if "full_time" in result:
-                parts.append("全职")
-            if parts:
-                result["raw"] = "、".join(parts)
+        parts = []
+        if "days_per_week" in result:
+            parts.append(f"每周{result['days_per_week']}天")
+        if "months" in result:
+            parts.append(f"至少{result['months']}个月")
+        if "full_time" in result:
+            parts.append("全职")
+        if parts:
+            result["raw"] = "、".join(parts)
         return result
 
     def _generate_summary(self, target_role: str, hard_skills: List[str],

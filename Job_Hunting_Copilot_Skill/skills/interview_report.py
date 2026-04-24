@@ -55,7 +55,7 @@ class InterviewReportSkill(AutoClawSkill):
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output"
             )
             os.makedirs(output_dir, exist_ok=True)
-            safe_role = target_role.replace("/", "_").replace("\\", "_")
+            safe_role = re.sub(r'[^\w\u4e00-\u9fff\-]', '_', target_role)[:30]
             output_path = os.path.join(output_dir, f"{safe_role}_面试练习报告.docx")
 
         summary = self._compute_summary(interview_results)

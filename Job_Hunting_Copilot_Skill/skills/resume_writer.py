@@ -19,6 +19,7 @@ GLM 调度方式：
 """
 
 import os
+import re
 import json
 from typing import Dict, Any
 from skills import AutoClawSkill
@@ -69,7 +70,7 @@ class ResumeWriterSkill(AutoClawSkill):
         os.makedirs(output_dir, exist_ok=True)
 
         name = user_profile.get("name", "用户")
-        safe_role = target_role.replace(" ", "_").replace("/", "_")
+        safe_role = re.sub(r'[^\w\u4e00-\u9fff\-]', '_', target_role)[:30]
         output_path = os.path.join(output_dir, f"【{safe_role}】{name}_定向简历.docx")
 
         if not DOCX_AVAILABLE:
@@ -139,10 +140,10 @@ class ResumeWriterSkill(AutoClawSkill):
         contact_para = doc.add_paragraph()
         contact_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         contact_text = (
-            f"📞 {user.get('phone', '138-XXXX-XXXX')}  "
-            f"✉️ {user.get('email', 'your@email.com')}  "
-            f"🎯 求职意向：{target_role}  "
-            f"📍 {user.get('target_city', '上海')}"
+            f"Tel: {user.get('phone', '138-XXXX-XXXX')}  "
+            f"| Email: {user.get('email', 'your@email.com')}  "
+            f"| 求职意向：{target_role}  "
+            f"| 期望城市：{user.get('target_city', '上海')}"
         )
         contact_run = contact_para.add_run(contact_text)
         contact_run.font.size = Pt(10)
@@ -151,7 +152,7 @@ class ResumeWriterSkill(AutoClawSkill):
         self._add_divider(doc)
 
         # ── 教育背景 ──
-        self._add_section_heading(doc, "🎓 教育背景")
+        self._add_section_heading(doc, "教育背景")
         edu = user.get("education", {})
         edu_para = doc.add_paragraph()
         edu_run = edu_para.add_run(
@@ -165,13 +166,13 @@ class ResumeWriterSkill(AutoClawSkill):
         self._add_divider(doc)
 
         # ── 核心经历（STAR 打磨内容）──
-        self._add_section_heading(doc, "💼 核心经历")
+        self._add_section_heading(doc, "核心经历")
         self._render_markdown_block(doc, polished_md)
 
         self._add_divider(doc)
 
         # ── 技能与证书 ──
-        self._add_section_heading(doc, "🛠️ 技能与证书")
+        self._add_section_heading(doc, "技能与证书")
         skills = user.get("skills", [])
         if skills:
             skills_para = doc.add_paragraph(style="List Bullet")

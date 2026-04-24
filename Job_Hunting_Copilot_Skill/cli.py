@@ -152,7 +152,11 @@ def run_interview(agent):
     print("\n  [场景] 模拟面试练习")
     target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
     interview_type = input("  面试类型 (behavioral/technical/comprehensive，默认: comprehensive): ").strip() or "comprehensive"
-    num_questions = int(input("  题目数量 (默认: 5): ").strip() or "5")
+    try:
+        num_questions = int(input("  题目数量 (默认: 5): ").strip() or "5")
+    except ValueError:
+        print("  [警告] 无效数字，使用默认值 5")
+        num_questions = 5
 
     print(f"\n  > 正在为 [{target_role}] 岗位生成面试题...")
     q_result = agent.execute(
