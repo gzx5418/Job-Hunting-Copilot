@@ -19,7 +19,7 @@ GLM 调度方式：
 架构说明：
   本 Skill 属于「语义密集型」任务，需要将口语化描述转化为职业化表述。
   在 AutoClaw 框架的生产部署中，此类任务由 GLM 大模型直接完成语义级改写；
-  当前提供基于规则引擎的本地 Demo 实现，包含：
+  当前提供基于规则引擎的本地实现，包含：
     - 岗位能力模型（ROLE_COMPETENCY_MAP）用于匹配关键词权重
     - 口语→职业化词汇映射表（VOCABULARY_MAP）
     - 量化数据占位符自动插入
@@ -154,7 +154,7 @@ class StarPolisherSkill(AutoClawSkill):
         """
         将单条口语化行为重写为 STAR 格式的职业描述。
         实际产品中此步骤由 GLM 完成语义理解；
-        此处提供规则引擎作为轻量 Demo 实现。
+        此处提供规则引擎作为轻量实现。
         """
         if not raw_action or len(raw_action) < 3:
             return ""

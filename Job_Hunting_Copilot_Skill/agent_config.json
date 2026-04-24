@@ -15,8 +15,7 @@
       "class": "OCRExtractorSkill",
       "description": "证书 OCR 提取 Skill：从证书照片中识别文字，提取证书名称、时间、机构、技能等结构化数据。",
       "input_schema": {
-        "image_paths": "list[string]",
-        "ocr_demo_mode": "boolean"
+        "image_paths": "list[string]"
       },
       "output_schema": {
         "experiences": "list[ExperienceItem]",

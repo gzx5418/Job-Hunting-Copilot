@@ -116,7 +116,7 @@ class AutoClawAgent:
         """
         意图路由：将用户自然语言映射到 Pipeline ID。
         生产环境中此步骤由 GLM 完成语义级匹配，
-        此处提供关键词规则路由作为轻量 Demo 实现。
+        此处提供关键词规则路由作为轻量实现。
 
         :param user_input: 用户自然语言指令
         :return: pipeline_id 或 None（fallback 给 GLM 直接回答）
@@ -273,11 +273,11 @@ class AutoClawAgent:
 
 
 # ══════════════════════════════════════════════════════
-#  演示入口
+#  运行入口
 # ══════════════════════════════════════════════════════
 
-def demo_resume_generation(agent: AutoClawAgent):
-    """演示场景一：个性化校招简历生成（JD 定制）"""
+def run_resume_generation(agent: AutoClawAgent):
+    """场景一：个性化校招简历生成（JD 定制）"""
     print("\n" + "-" * 58)
     print("  [场景一] 案例 2 -- 个性化校招简历生成助手（JD 定制版）")
     print("-" * 58)
@@ -307,8 +307,8 @@ def demo_resume_generation(agent: AutoClawAgent):
     return result
 
 
-def demo_internship_aggregator(agent: AutoClawAgent):
-    """演示场景二：行业实习职位自动聚合器"""
+def run_internship_aggregator(agent: AutoClawAgent):
+    """场景二：行业实习职位自动聚合器"""
     print("\n" + "-" * 58)
     print("  [场景二] 案例 3 -- 行业实习职位自动聚合器")
     print("-" * 58)
@@ -329,19 +329,19 @@ def demo_internship_aggregator(agent: AutoClawAgent):
 
 def main():
     print("\n" + "=" * 58)
-    print("  AutoClaw Agent -- 求职智能体  |  全流程演示")
+    print("  AutoClaw Agent -- 求职智能体  |  全流程运行")
     print("  框架: AutoClaw  |  LLM: GLM-4-Plus")
     print("=" * 58)
 
     config_path = os.path.join(AGENT_DIR, "agent_config.json")
     agent = AutoClawAgent(config_path=config_path)
 
-    # 演示两大核心场景
-    demo_resume_generation(agent)
-    demo_internship_aggregator(agent)
+    # 运行两大核心场景
+    run_resume_generation(agent)
+    run_internship_aggregator(agent)
 
     print("\n" + "=" * 58)
-    print("  [DONE] 全流程演示完成！请查看 output/ 目录中的生成文件")
+    print("  [DONE] 全流程运行完成！请查看 output/ 目录中的生成文件")
     print("=" * 58 + "\n")
 
 

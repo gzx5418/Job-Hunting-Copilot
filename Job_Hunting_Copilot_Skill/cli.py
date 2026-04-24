@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-求职智能体 - 交互式演示入口
+求职智能体 - 交互式入口
 ===================================
   运行方式: python cli.py
   提供菜单式交互界面，供评审直接体验各 Pipeline 的闭环能力。
@@ -17,7 +17,7 @@ from agent import AutoClawAgent
 
 def print_header():
     print("\n" + "=" * 56)
-    print("  AutoClaw Agent -- 求职智能体  |  交互式演示")
+    print("  AutoClaw Agent -- 求职智能体  |  交互式入口")
     print("  框架: AutoClaw  |  LLM: GLM-4-Plus  |  路径B: 原生Skill模式")
     print("=" * 56)
 
@@ -34,7 +34,7 @@ def print_menu():
     print("-" * 56)
 
 
-def demo_resume(agent):
+def run_resume(agent):
     print("\n  [场景] 个性化简历生成（JD 定制版）")
     target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
     print("  请粘贴你的经历草稿（输入空行结束）:")
@@ -71,7 +71,7 @@ def demo_resume(agent):
     _print_result(result)
 
 
-def demo_internship(agent):
+def run_internship(agent):
     print("\n  [场景] 行业实习职位自动聚合")
     keyword = input("  岗位关键词 (默认: AI 产品实习): ").strip() or "AI 产品实习"
     city = input("  目标城市 (默认: 上海): ").strip() or "上海"
@@ -83,7 +83,7 @@ def demo_internship(agent):
     _print_result(result)
 
 
-def demo_literature(agent):
+def run_literature(agent):
     print("\n  [场景] 全自动文献调研")
     topic = input("  研究主题 (默认: 大语言模型在教育领域的应用): ").strip() or "大语言模型在教育领域的应用"
     result = agent.execute(
@@ -93,18 +93,20 @@ def demo_literature(agent):
     _print_result(result)
 
 
-def demo_ocr(agent):
+def run_ocr(agent):
     print("\n  [场景] 证书照片识别与经历提取")
-    image_path = input("  证书照片路径（直接回车使用演示模式）: ").strip()
+    image_path = input("  证书照片路径: ").strip()
+    if not image_path:
+        print("  [跳过] 请提供证书照片路径")
+        return
     result = agent.execute(
         user_input="帮我从证书照片中提取经历信息",
-        image_paths=[image_path] if image_path else [],
-        ocr_demo_mode=not image_path
+        image_paths=[image_path]
     )
     _print_result(result)
 
 
-def demo_full(agent):
+def run_full(agent):
     print("\n  [场景] 一站式全流程")
     target_role = input("  目标岗位 (默认: 管培生): ").strip() or "管培生"
     keyword = input("  实习关键词 (默认: AI 产品实习): ").strip() or "AI 产品实习"
@@ -124,7 +126,7 @@ def demo_full(agent):
     _print_result(result)
 
 
-def demo_multi_resume(agent):
+def run_multi_resume(agent):
     print("\n  [场景] 多岗位简历对比生成")
     roles_input = input("  目标岗位（逗号分隔，默认: 管培生,AI产品实习生）: ").strip()
     roles = [r.strip() for r in roles_input.split(",")] if roles_input else ["管培生", "AI产品实习生"]
@@ -169,12 +171,12 @@ def main():
     agent = AutoClawAgent(config_path=config_path)
 
     handlers = {
-        "1": demo_resume,
-        "2": demo_internship,
-        "3": demo_literature,
-        "4": demo_ocr,
-        "5": demo_full,
-        "6": demo_multi_resume,
+        "1": run_resume,
+        "2": run_internship,
+        "3": run_literature,
+        "4": run_ocr,
+        "5": run_full,
+        "6": run_multi_resume,
     }
 
     while True:
