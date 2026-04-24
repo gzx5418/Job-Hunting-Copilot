@@ -3,7 +3,8 @@
 AutoClaw Skill ID: ocr_extractor
 
 职责：
-  接收证书照片路径列表，通过 OCR 识别文字内容，
+  接收证书照片路径列表，生成 AutoClaw GLM-4V 视觉识别任务，
+  或解析已由 AutoClaw 视觉能力识别的文字内容，
   从中提取时间、证书名称、颁发机构、技能关键词，
   输出与 experience_extractor 兼容的结构化经历数据。
 
@@ -12,12 +13,11 @@ AutoClaw Skill ID: ocr_extractor
   - 简历生成 Pipeline 中，作为 experience_extractor 的前置步骤
 
 架构说明：
-  本 Skill 依赖图像识别能力。在 AutoClaw 生产环境中，
-  由 AutoClaw 的视觉能力（GLM-4V）直接识别图片内容；
-  当前提供基于 EasyOCR 的本地实现。
+  本 Skill 依赖 AutoClaw 的视觉能力（GLM-4V）识别图片内容。
+  不依赖任何本地 OCR 引擎（EasyOCR/Tesseract），
+  完全通过 AutoClaw 框架自带的视觉模型完成识别。
 """
 
-import os
 import re
 import logging
 from typing import List, Dict, Any, Optional
@@ -27,47 +27,62 @@ from skills import AutoClawSkill
 class OCRExtractorSkill(AutoClawSkill):
     """
     证书 OCR 提取 Skill
-    从证书照片中识别文字，提取结构化经历信息
+    通过 AutoClaw GLM-4V 视觉能力识别证书照片，提取结构化经历信息
     """
 
     SKILL_NAME = "ocr_extractor"
-    SKILL_DESCRIPTION = "从证书照片中通过 OCR 识别文字，提取证书名称、时间、机构、技能等结构化数据。"
+    SKILL_DESCRIPTION = "通过 AutoClaw GLM-4V 视觉能力识别证书照片，提取证书名称、时间、机构、技能等结构化数据。"
 
-    # 证书常见关键词
     CERTIFICATE_KEYWORDS = [
         "证书", "认证", "资格", "竞赛", "奖", "荣誉", "优秀",
         "一等奖", "二等奖", "三等奖", "金奖", "银奖", "铜奖",
         "合格", "通过", "级别", "等级",
     ]
 
-    # 时间提取模式
     TIME_PATTERNS = [
         r'\d{4}[.\-/年]\d{1,2}[.\-/月]?',
         r'\d{4}年',
     ]
 
     def run(self, image_paths: List[str] = None,
-            **kwargs) -> Dict[str, Any]:
+            ocr_results: Dict[str, str] = None, **kwargs) -> Dict[str, Any]:
         """
         执行证书 OCR 提取。
 
         :param image_paths: 证书照片路径列表（必需）
+        :param ocr_results: AutoClaw GLM-4V 已识别的结果 {path: text}
         :return: 结构化的证书经历列表（与 experience_extractor 输出格式兼容）
         """
         self.validate_input({"image_paths": image_paths}, ["image_paths"])
         self.logger.info(f"开始证书 OCR 提取 | 图片数: {len(image_paths)}")
 
-        certificates = []
+        certificates: List[Dict] = []
 
-        if image_paths:
-            for path in image_paths:
-                if not os.path.exists(path):
-                    self.logger.warning(f"图片不存在: {path}，跳过")
+        # 模式A：AutoClaw GLM-4V 已完成识别，直接解析
+        if ocr_results:
+            for path, text in ocr_results.items():
+                if not text:
                     continue
-                text = self._ocr_image(path)
                 cert = self._parse_certificate(text)
                 if cert:
+                    cert["image_path"] = path
                     certificates.append(cert)
+                    self.logger.info(f"GLM-4V 识别成功: {path}")
+
+        # 模式B：生成 GLM-4V 视觉识别任务
+        if not certificates and image_paths:
+            task = self._build_vision_task(image_paths)
+            return self._success(
+                data={
+                    "status": "pending_vision",
+                    "vision_task": task,
+                    "experiences": [],
+                    "count": 0,
+                    "source": "ocr_extraction",
+                    "message": "已生成 GLM-4V 视觉识别任务，请 AutoClaw 执行后传入 ocr_results"
+                },
+                message=f"已生成 {len(image_paths)} 张证书的 GLM-4V 视觉识别任务"
+            )
 
         if not certificates:
             self.logger.warning("未能从任何图片中提取到证书信息")
@@ -83,48 +98,25 @@ class OCRExtractorSkill(AutoClawSkill):
             message=f"从证书中提取了 {len(certificates)} 段结构化经历"
         )
 
-    def _ocr_image(self, image_path: str) -> str:
-        """
-        OCR 识别图片文字。
-        优先尝试 EasyOCR，失败则尝试 Tesseract，都不可用则返回空。
-        """
-        # 尝试 EasyOCR
-        try:
-            import easyocr
-            reader = easyocr.Reader(['ch_sim', 'en'], verbose=False)
-            results = reader.readtext(image_path)
-            text = "\n".join([item[1] for item in results])
-            if text.strip():
-                self.logger.info(f"EasyOCR 识别成功: {image_path}")
-                return text
-        except ImportError:
-            pass
-        except Exception as e:
-            self.logger.warning(f"EasyOCR 识别失败: {e}")
-
-        # 尝试 Tesseract
-        try:
-            import pytesseract
-            from PIL import Image
-            img = Image.open(image_path)
-            text = pytesseract.image_to_string(img, lang='chi_sim+eng')
-            if text.strip():
-                self.logger.info(f"Tesseract 识别成功: {image_path}")
-                return text
-        except ImportError:
-            pass
-        except Exception as e:
-            self.logger.warning(f"Tesseract 识别失败: {e}")
-
-        self.logger.warning(f"无可用的 OCR 引擎，请安装 easyocr 或 pytesseract")
-        return ""
+    def _build_vision_task(self, image_paths: List[str]) -> Dict:
+        """生成 AutoClaw GLM-4V 视觉识别任务指令"""
+        return {
+            "action": "ocr_certificates",
+            "tool": "GLM-4V",
+            "images": image_paths,
+            "prompt": (
+                "请识别这张证书照片中的所有文字内容，包括："
+                "证书名称、颁发时间、颁发机构、持有人姓名、等级/分数、"
+                "有效期等所有可见信息。按原始排版输出。"
+            ),
+            "output_format": "structured_text"
+        }
 
     def _parse_certificate(self, text: str) -> Optional[Dict]:
         """从 OCR 文本中解析证书信息"""
         if not text or len(text) < 5:
             return None
 
-        # 提取时间
         time_str = ""
         for pattern in self.TIME_PATTERNS:
             match = re.search(pattern, text)
@@ -132,17 +124,14 @@ class OCRExtractorSkill(AutoClawSkill):
                 time_str = match.group()
                 break
 
-        # 提取证书名称（寻找包含关键词的行）
         cert_name = ""
         for line in text.split("\n"):
             if any(kw in line for kw in self.CERTIFICATE_KEYWORDS):
                 cert_name = line.strip()
                 break
-
         if not cert_name:
             cert_name = text[:50].strip()
 
-        # 提取机构名
         org = ""
         org_keywords = ["大学", "学院", "协会", "中心", "部门", "组委会", "教育部"]
         for line in text.split("\n"):
