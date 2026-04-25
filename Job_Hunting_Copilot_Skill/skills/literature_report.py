@@ -15,6 +15,7 @@ AutoClaw Skill ID: literature_report
 """
 
 import os
+import re
 from typing import List, Dict, Any, Optional
 from skills import AutoClawSkill
 

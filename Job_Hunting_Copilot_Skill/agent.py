@@ -1,65 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-AutoClaw Agent 调度引擎 (GLM Pipeline Dispatcher)  v2.1
-========================================================
-核心文件：agent.py
-
-职责：
-  1. 加载 agent_config.json 中的 Skill 注册表和 Pipeline 定义
-  2. 接收用户自然语言指令
-  3. 通过意图路由规则，将指令映射到对应的 Pipeline
-  4. 按 Pipeline 步骤顺序调度各 Skill 执行
-  5. 管理 Skill 间的数据流（上一步输出 → 下一步输入）
-  6. 汇总最终输出，报告结果给用户
-
-架构图：
-  用户指令
-     │
-     ▼
-  GLM 意图识别 & 路由 (route_intent)
-     │
-     ▼
-  Pipeline 定义 (agent_config.json)
-  ┌──────────────────────────────┐
-  │  Step 1 → Skill A (run())   │
-  │  Step 2 → Skill B (run())   │  ← 数据流自动传递
-  │  Step 3 → Skill C (run())   │
-  └──────────────────────────────┘
-     │
-     ▼
-  输出文件 (output/ 目录)
+AutoClaw Agent dispatcher.
 """
 
+import importlib
 import json
+import logging
 import os
 import sys
-import importlib
-import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional
 
-# ── 日志配置 ──
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [AutoClaw] %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S"
+    datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("AutoClaw.Agent")
 
-# ── 将 Skill 模块目录加入 Python 路径 ──
 AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AGENT_DIR)
 
 
 class AutoClawAgent:
-    """
-    AutoClaw Agent 调度引擎
-
-    通过配置文件（agent_config.json）驱动整个 Agent 的行为：
-    - 所有 Skill 在配置文件中注册，引擎动态加载
-    - 新增/修改能力只需编辑配置文件，无需修改此引擎
-    - GLM 作为"大脑"负责理解意图，Agent 作为"执行者"负责调度 Skill
-    """
-
     def __init__(self, config_path: str = None):
         config_path = config_path or os.path.join(AGENT_DIR, "agent_config.json")
         self.config = self._load_config(config_path)
@@ -69,16 +32,11 @@ class AutoClawAgent:
         meta = self.config["agent_meta"]
         logger.info("=" * 58)
         logger.info(f"  {meta['name']}  |  框架: {meta['framework']}")
-        logger.info(f"  已加载 %d 个 Skill", len(self.skill_instances))
+        logger.info("  已加载 %d 个 Skill", len(self.skill_instances))
         logger.info(f"  LLM 后端: {meta['llm_backend']}")
         logger.info("=" * 58)
 
-    # ──────────────────────────────────────────────────
-    #  初始化
-    # ──────────────────────────────────────────────────
-
     def _load_config(self, config_path: str) -> Dict:
-        """加载 agent_config.json"""
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -86,10 +44,6 @@ class AutoClawAgent:
             raise RuntimeError(f"找不到配置文件: {config_path}")
 
     def _load_all_skills(self):
-        """
-        按 skill_registry 动态加载所有 Skill 类。
-        实现热插拔：新增 Skill 只需在 agent_config.json 注册，无需修改此引擎。
-        """
         registry = self.config.get("skill_registry", {})
         runtime = self.config.get("runtime_settings", {})
         loaded, failed = [], []
@@ -108,19 +62,7 @@ class AutoClawAgent:
         if failed:
             logger.warning(f"  加载失败: {'; '.join(failed)}")
 
-    # ──────────────────────────────────────────────────
-    #  意图路由
-    # ──────────────────────────────────────────────────
-
     def route_intent(self, user_input: str) -> Optional[str]:
-        """
-        意图路由：将用户自然语言映射到 Pipeline ID。
-        生产环境中此步骤由 GLM 完成语义级匹配，
-        此处提供关键词规则路由作为轻量实现。
-
-        :param user_input: 用户自然语言指令
-        :return: pipeline_id 或 None（fallback 给 GLM 直接回答）
-        """
         routing_rules = self.config.get("llm_dispatch_rules", {}).get("routing", [])
         best_match, best_score = None, 0
 
@@ -131,28 +73,45 @@ class AutoClawAgent:
                 best_match = rule["pipeline"]
 
         if best_match and best_score > 0:
+            if best_match == "resume_generation" and "面试" in user_input:
+                interview_score = sum(
+                    1
+                    for rule in routing_rules
+                    if rule.get("pipeline") == "interview_practice"
+                    for kw in rule.get("keywords", [])
+                    if kw in user_input
+                )
+                if interview_score > 0:
+                    best_match = "interview_practice"
+                    best_score = interview_score
             logger.info(f"[路由] 意图匹配: [{best_match}]（命中 {best_score} 个关键词）")
         else:
             logger.info("[路由] 未匹配到 Pipeline，降级为 GLM 直接回答")
 
         return best_match if best_score > 0 else None
 
-    # ──────────────────────────────────────────────────
-    #  Pipeline 执行
-    # ──────────────────────────────────────────────────
+    def _build_output(self, pipeline: Dict[str, Any], context: Dict[str, Any]) -> str:
+        output_template = pipeline.get("output", "")
+        safe_ctx = {k: str(v) for k, v in context.items() if isinstance(v, (str, int, float))}
+
+        if isinstance(output_template, list):
+            final_outputs = []
+            for tmpl in output_template:
+                try:
+                    final_outputs.append(tmpl.format(**safe_ctx))
+                except KeyError:
+                    final_outputs.append(tmpl)
+            return ", ".join(final_outputs)
+
+        if isinstance(output_template, str):
+            try:
+                return output_template.format(**safe_ctx)
+            except KeyError:
+                return output_template
+
+        return str(output_template)
 
     def run_pipeline(self, pipeline_id: str, **init_context) -> Dict:
-        """
-        按配置执行指定的 Pipeline。
-
-        数据流机制：
-          每个 Skill 的 run(**context) 接收当前上下文；
-          Skill 的 data 输出会合并入 context，传递给下一个 Skill。
-
-        :param pipeline_id: Pipeline ID
-        :param init_context: 初始上下文数据
-        :return: 最终执行结果摘要
-        """
         pipeline = self.config.get("task_pipelines", {}).get(pipeline_id)
         if not pipeline:
             return {"status": "error", "message": f"未找到 Pipeline: {pipeline_id}"}
@@ -163,25 +122,50 @@ class AutoClawAgent:
         logger.info(f"{'=' * 58}")
 
         context = dict(init_context)
-        step_results = {}
+        step_results: Dict[str, Dict[str, Any]] = {}
+        step_errors = []
         steps = pipeline.get("steps", [])
 
         for step_cfg in steps:
             step_num = step_cfg["step"]
+            step_key = f"step_{step_num}"
 
-            # 支持嵌套 Pipeline
             if "pipeline" in step_cfg:
                 sub_id = step_cfg["pipeline"]
                 logger.info(f"\n  [Step {step_num}] >> 执行子 Pipeline: [{sub_id}]")
                 try:
                     sub_result = self.run_pipeline(sub_id, **context)
-                    context.update(sub_result.get("data", {}))
-                    step_results[f"step_{step_num}"] = sub_result
                 except Exception as e:
                     logger.error(f"  [X] 子 Pipeline [{sub_id}] 执行异常: {e}")
-                    step_results[f"step_{step_num}"] = {"status": "error", "message": str(e)}
+                    sub_result = {"status": "error", "message": str(e)}
+
+                step_results[step_key] = sub_result
+                sub_status = sub_result.get("status")
+                if sub_status == "success":
+                    context.update(sub_result.get("data", {}))
+                elif sub_status == "pending":
+                    pending_data = dict(context)
+                    pending_data.update(sub_result.get("data", {}))
+                    return {
+                        "status": "pending",
+                        "pipeline": pipeline_id,
+                        "pipeline_name": pipeline["name"],
+                        "message": sub_result.get("message", f"Sub-pipeline [{sub_id}] pending"),
+                        "output": sub_result.get("output", ""),
+                        "step_results": step_results,
+                        "data": pending_data,
+                    }
+                else:
+                    step_errors.append(sub_result.get("message", f"Sub-pipeline [{sub_id}] failed"))
                     if pipeline.get("fail_fast", False):
-                        return {"status": "error", "message": f"子 Pipeline [{sub_id}] 失败: {e}"}
+                        return {
+                            "status": "error",
+                            "message": f"子 Pipeline [{sub_id}] 失败: {step_errors[-1]}",
+                            "pipeline": pipeline_id,
+                            "pipeline_name": pipeline["name"],
+                            "step_results": step_results,
+                            "data": context,
+                        }
                 continue
 
             skill_id = step_cfg.get("skill")
@@ -191,11 +175,12 @@ class AutoClawAgent:
             skill = self.skill_instances.get(skill_id)
             if not skill:
                 logger.error(f"  [X] Skill [{skill_id}] 未加载，跳过")
+                step_results[step_key] = {"status": "error", "message": f"Skill [{skill_id}] 未加载"}
+                step_errors.append(f"Skill [{skill_id}] 未加载")
                 if pipeline.get("fail_fast", False):
                     return {"status": "error", "message": f"Skill [{skill_id}] 未加载"}
                 continue
 
-            # 执行 Skill
             try:
                 result = skill.run(**context)
             except ValueError as e:
@@ -205,34 +190,40 @@ class AutoClawAgent:
                 result = {"status": "error", "message": str(e)}
                 logger.error(f"  [X] Skill [{skill_id}] 执行异常: {e}")
 
-            step_results[f"step_{step_num}"] = result
+            step_results[step_key] = result
 
             if result.get("status") == "success":
-                context.update(result.get("data", {}))
+                result_data = result.get("data", {})
+                if isinstance(result_data, dict) and str(result_data.get("status", "")).startswith("pending_"):
+                    pending_data = dict(context)
+                    pending_data.update(result_data)
+                    logger.info(f"  [PENDING] {result.get('message', '')}")
+                    return {
+                        "status": "pending",
+                        "pipeline": pipeline_id,
+                        "pipeline_name": pipeline["name"],
+                        "message": result.get("message", ""),
+                        "step_results": step_results,
+                        "data": pending_data,
+                    }
+
+                if isinstance(result_data, dict):
+                    context.update(result_data)
                 logger.info(f"  [OK] {result.get('message', '')}")
             else:
                 logger.error(f"  [X] {result.get('message', '')}")
+                step_errors.append(result.get("message", f"Step {step_num} failed"))
                 if pipeline.get("fail_fast", False):
-                    return {"status": "error", "message": f"Step {step_num} 失败: {result.get('message', '')}"}
+                    return {
+                        "status": "error",
+                        "message": f"Step {step_num} 失败: {result.get('message', '')}",
+                        "pipeline": pipeline_id,
+                        "pipeline_name": pipeline["name"],
+                        "step_results": step_results,
+                        "data": context,
+                    }
 
-        # 渲染输出路径模板
-        output_template = pipeline.get("output", "")
-        safe_ctx = {k: str(v) for k, v in context.items() if isinstance(v, (str, int, float))}
-        if isinstance(output_template, list):
-            final_outputs = []
-            for tmpl in output_template:
-                try:
-                    final_outputs.append(tmpl.format(**safe_ctx))
-                except KeyError:
-                    final_outputs.append(tmpl)
-            final_output = ", ".join(final_outputs)
-        elif isinstance(output_template, str):
-            try:
-                final_output = output_template.format(**safe_ctx)
-            except KeyError:
-                final_output = output_template
-        else:
-            final_output = str(output_template)
+        final_output = self._build_output(pipeline, context)
 
         logger.info(f"\n{'=' * 58}")
         logger.info(f"  Pipeline [{pipeline['name']}] 完成")
@@ -240,53 +231,38 @@ class AutoClawAgent:
         logger.info(f"{'=' * 58}\n")
 
         return {
-            "status": "success",
+            "status": "error" if step_errors else "success",
             "pipeline": pipeline_id,
             "pipeline_name": pipeline["name"],
+            "message": "; ".join(step_errors) if step_errors else "",
             "output": final_output,
             "step_results": step_results,
-            "data": context
+            "data": context,
         }
 
-    # ──────────────────────────────────────────────────
-    #  主入口
-    # ──────────────────────────────────────────────────
-
     def execute(self, user_input: str, **extra_context) -> Dict:
-        """
-        Agent 主入口：接收用户指令，自动路由并执行 Pipeline。
-
-        :param user_input: 用户自然语言指令
-        :param extra_context: 可选的结构化上下文（target_role、city 等）
-        :return: 执行结果摘要
-        """
         pipeline_id = self.route_intent(user_input)
         if not pipeline_id:
             return {
                 "status": "fallback",
                 "message": "未匹配到 Pipeline，请由 GLM 直接处理。",
-                "user_input": user_input
+                "user_input": user_input,
             }
 
         init_context = {"user_input": user_input, "raw_text": user_input, **extra_context}
         return self.run_pipeline(pipeline_id, **init_context)
 
 
-# ══════════════════════════════════════════════════════
-#  运行入口
-# ══════════════════════════════════════════════════════
-
 def run_resume_generation(agent: AutoClawAgent):
-    """场景一：个性化校招简历生成（JD 定制）"""
     print("\n" + "-" * 58)
     print("  [场景一] 案例 2 -- 个性化校招简历生成助手（JD 定制版）")
     print("-" * 58)
 
     result = agent.execute(
-        user_input="这是我大学四年的经历草稿，帮我生成一份针对'管培生'岗位的简历。",
+        user_input="这是我大学四年的经历草稿，帮我生成一份针对管培生岗位的简历。",
         target_role="管培生",
         jd_text=(
-            "管培生岗位要求：本科及以上学历，专业不限。具备较强的沟通协调能力、"
+            "管培生岗位要求：本科及以上学历，专业不限。具备较强的沟通协调能力。"
             "学习能力和抗压能力。有学生干部经验优先。熟练使用 Excel、PPT 等办公软件。"
             "具有跨部门协作经验，善于解决问题，有领导力潜质。每周 5 天，实习 3 个月以上。"
         ),
@@ -297,10 +273,10 @@ def run_resume_generation(agent: AutoClawAgent):
             "建了几个微信群，整理过各种表格。\n\n"
             "大四参加了大创项目，我们组做了一个校园互助小程序，"
             "我主要负责产品方向的需求整理和用户调研。"
-        )
+        ),
     )
     if result.get("status") == "success":
-        print("\n  [OK] 场景一完成！")
+        print("\n  [OK] 场景一完成")
         file_path = result.get("data", {}).get("file_path", result.get("output", ""))
         if file_path:
             print(f"  [FILE] 简历文件: {file_path}")
@@ -308,7 +284,6 @@ def run_resume_generation(agent: AutoClawAgent):
 
 
 def run_internship_aggregator(agent: AutoClawAgent):
-    """场景二：行业实习职位自动聚合器"""
     print("\n" + "-" * 58)
     print("  [场景二] 案例 3 -- 行业实习职位自动聚合器")
     print("-" * 58)
@@ -317,10 +292,10 @@ def run_internship_aggregator(agent: AutoClawAgent):
         user_input="帮我找上海的 AI 产品实习，跨平台抓取并生成对比表。",
         keyword="AI 产品实习",
         city="上海",
-        platforms=["zhipin", "shixiseng", "nowcoder"]
+        platforms=["zhipin", "shixiseng", "nowcoder"],
     )
     if result.get("status") == "success":
-        print("\n  [OK] 场景二完成！")
+        print("\n  [OK] 场景二完成")
         file_path = result.get("data", {}).get("file_path", result.get("output", ""))
         if file_path:
             print(f"  [FILE] 对比表: {file_path}")
@@ -329,19 +304,18 @@ def run_internship_aggregator(agent: AutoClawAgent):
 
 def main():
     print("\n" + "=" * 58)
-    print("  AutoClaw Agent -- 求职智能体  |  全流程运行")
-    print("  框架: AutoClaw  |  LLM: GLM-4-Plus")
+    print("  AutoClaw Agent -- 求职智能体 | 全流程运行")
+    print("  框架: AutoClaw | LLM: GLM-4-Plus")
     print("=" * 58)
 
     config_path = os.path.join(AGENT_DIR, "agent_config.json")
     agent = AutoClawAgent(config_path=config_path)
 
-    # 运行两大核心场景
     run_resume_generation(agent)
     run_internship_aggregator(agent)
 
     print("\n" + "=" * 58)
-    print("  [DONE] 全流程运行完成！请查看 output/ 目录中的生成文件")
+    print("  [DONE] 全流程运行完成，请查看 output/ 目录中的生成文件")
     print("=" * 58 + "\n")
 
 
