@@ -73,17 +73,6 @@ class AutoClawAgent:
                 best_match = rule["pipeline"]
 
         if best_match and best_score > 0:
-            if best_match == "resume_generation" and "面试" in user_input:
-                interview_score = sum(
-                    1
-                    for rule in routing_rules
-                    if rule.get("pipeline") == "interview_practice"
-                    for kw in rule.get("keywords", [])
-                    if kw in user_input
-                )
-                if interview_score > 0:
-                    best_match = "interview_practice"
-                    best_score = interview_score
             logger.info(f"[路由] 意图匹配: [{best_match}]（命中 {best_score} 个关键词）")
         else:
             logger.info("[路由] 未匹配到 Pipeline，降级为 GLM 直接回答")
@@ -99,14 +88,16 @@ class AutoClawAgent:
             for tmpl in output_template:
                 try:
                     final_outputs.append(tmpl.format(**safe_ctx))
-                except KeyError:
+                except KeyError as e:
+                    logger.warning(f"输出模板缺少变量 {e}，跳过替换: {tmpl}")
                     final_outputs.append(tmpl)
             return ", ".join(final_outputs)
 
         if isinstance(output_template, str):
             try:
                 return output_template.format(**safe_ctx)
-            except KeyError:
+            except KeyError as e:
+                logger.warning(f"输出模板缺少变量 {e}，跳过替换")
                 return output_template
 
         return str(output_template)
@@ -194,7 +185,7 @@ class AutoClawAgent:
 
             if result.get("status") == "success":
                 result_data = result.get("data", {})
-                if isinstance(result_data, dict) and str(result_data.get("status", "")).startswith("pending_"):
+                if isinstance(result_data, dict) and result_data.get("status") in ("pending", "pending_web", "pending_vision"):
                     pending_data = dict(context)
                     pending_data.update(result_data)
                     logger.info(f"  [PENDING] {result.get('message', '')}")
@@ -251,6 +242,17 @@ class AutoClawAgent:
 
         init_context = {"user_input": user_input, "raw_text": user_input, **extra_context}
         return self.run_pipeline(pipeline_id, **init_context)
+
+    def run_skill(self, skill_id: str, **kwargs) -> Dict:
+        skill = self.skill_instances.get(skill_id)
+        if not skill:
+            return {"status": "error", "message": f"Skill [{skill_id}] 未加载"}
+        try:
+            return skill.run(**kwargs)
+        except ValueError as e:
+            return {"status": "error", "message": str(e)}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
 
 def run_resume_generation(agent: AutoClawAgent):

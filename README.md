@@ -49,7 +49,7 @@ AutoClaw 框架（执行器：Pipeline 编排 & 数据流管理）
 | `job_scraper` | 驱动浏览器跨平台抓取，自动翻页 | **Browser -> 数据** |
 | `match_scorer` | 四维评分（技能/出勤/城市/学历），Tier 分级 | GLM 语义匹配 |
 | `report_generator` | 写入 Excel，条件格式高亮，冻结行 | **-> Excel (.xlsx)** |
-| `academic_search` | 调用 Semantic Scholar API 搜索论文 | HTTP API -> 论文列表 |
+| `academic_search` | 通过 AutoClaw MCP_WebReader 搜索学术论文 | Web 搜索 -> 论文列表 |
 | `paper_digest` | 论文摘要结构化提炼（方法/发现/结论） | GLM 语义提炼 |
 | `literature_report` | 生成 Word 文献综述报告（表格+趋势+建议） | **-> Word (.docx)** |
 | `interview_questioner` | 基于岗位能力模型生成结构化面试题（技术/行为/综合） | GLM 结构化出题 |
@@ -198,6 +198,7 @@ python cli.py
 [5] 一站式全流程  -- 简历 + 岗位聚合
 [6] 多岗位对比    -- 同时生成多个岗位的定制简历
 [7] 模拟面试      -- 选择岗位类型，生成面试题并评估
+[8] 简历+面试    -- 生成简历后自动进入面试练习
 ```
 
 ### 方式二：全流程自动演示
@@ -286,7 +287,7 @@ Job_Hunting_Copilot_Skill/
 | `openpyxl` | Excel 条件格式、列宽、冻结行 |
 | `AutoClaw WebDriver` | 浏览器自动化（真实部署时启用） |
 | `GLM-4-Plus` | 意图理解、STAR 改写、语义评分、面试出题与评估（AutoClaw 框架集成） |
-| `easyocr` (可选) | 证书照片 OCR 识别 |
+| `AutoClaw GLM-4V` | 证书照片视觉识别（替代本地 OCR 引擎） |
 
 ---
 
@@ -298,4 +299,4 @@ Job_Hunting_Copilot_Skill/
 - **GLM 委托机制**：语义密集型任务（STAR 改写、JD 匹配、面试出题）标注 `glm_delegation`，由 GLM 处理
 - **岗位能力建模**：6 个预置能力模型，驱动面试出题和评分，确保面试练习的岗位针对性
 - **跨应用闭环**：Browser -> GLM -> Excel/Word，真正替代人工操作
-- **优雅降级**：API 限流时自动降级为演示数据，python-docx 缺失时降级为 Markdown
+- **优雅降级**：python-docx 缺失时自动降级为 Markdown 输出；pending 状态支持异步工具协作

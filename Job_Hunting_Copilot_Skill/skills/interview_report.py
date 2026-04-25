@@ -15,7 +15,7 @@ AutoClaw Skill ID: interview_report
 """
 
 import os
-import json
+import re
 import logging
 from typing import List, Dict, Any
 from skills import AutoClawSkill
@@ -44,7 +44,7 @@ class InterviewReportSkill(AutoClawSkill):
         if not interview_results:
             return self._error("缺少面试结果数据", detail="interview_results 不能为空")
 
-        self.validate_input({"interview_results": interview_results}, ["interview_results"])
+        self.validate_input({"target_role": target_role}, ["target_role"])
 
         self.logger.info(
             f"开始生成面试报告 | 岗位: {target_role} | 题目数: {len(interview_results)}"

@@ -186,28 +186,27 @@ def run_interview(agent):
             print("  [跳过] 未输入回答")
             continue
 
-        score_result = agent.skill_instances.get("interview_scorer")
-        if score_result:
-            try:
-                eval_result = score_result.run(
-                    question=q["question"],
-                    answer=answer,
-                    reference_points=q.get("reference_points", []),
-                    target_role=target_role
-                )
-                if eval_result.get("status") == "success":
-                    score_data = eval_result["data"]
-                    print(f"    → 得分: {score_data['score']}/100 (等级 {score_data['tier']})")
-                    for fb in score_data.get("feedback", [])[:2]:
-                        print(f"    → {fb}")
-                    interview_results.append({
-                        "id": q["id"],
-                        "question": q["question"],
-                        "answer": answer,
-                        "score_data": score_data
-                    })
-            except Exception as e:
-                print(f"    [评估异常] {e}")
+        try:
+            eval_result = agent.run_skill(
+                "interview_scorer",
+                question=q["question"],
+                answer=answer,
+                reference_points=q.get("reference_points", []),
+                target_role=target_role
+            )
+            if eval_result.get("status") == "success":
+                score_data = eval_result["data"]
+                print(f"    → 得分: {score_data['score']}/100 (等级 {score_data['tier']})")
+                for fb in score_data.get("feedback", [])[:2]:
+                    print(f"    → {fb}")
+                interview_results.append({
+                    "id": q["id"],
+                    "question": q["question"],
+                    "answer": answer,
+                    "score_data": score_data
+                })
+        except Exception as e:
+            print(f"    [评估异常] {e}")
 
     if interview_results:
         print(f"\n  > 正在生成面试练习报告...")

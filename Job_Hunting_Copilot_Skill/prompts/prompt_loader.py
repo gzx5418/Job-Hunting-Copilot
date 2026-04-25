@@ -40,8 +40,3 @@ def load_prompt(name: str, **variables) -> str:
             return template
 
     return template
-
-
-def clear_cache():
-    """清空 Prompt 缓存"""
-    _cache.clear()
