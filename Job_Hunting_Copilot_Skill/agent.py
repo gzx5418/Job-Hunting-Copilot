@@ -185,7 +185,7 @@ class AutoClawAgent:
 
             if result.get("status") == "success":
                 result_data = result.get("data", {})
-                if isinstance(result_data, dict) and result_data.get("status") in ("pending", "pending_web", "pending_vision"):
+                if isinstance(result_data, dict) and result_data.get("status") in ("pending", "pending_web", "pending_vision", "pending_browser"):
                     pending_data = dict(context)
                     pending_data.update(result_data)
                     logger.info(f"  [PENDING] {result.get('message', '')}")

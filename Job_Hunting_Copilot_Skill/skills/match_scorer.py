@@ -144,7 +144,7 @@ class MatchScorerSkill(AutoClawSkill):
 
         # ── 3. 城市匹配 (20分) ──
         job_location = job.get("location", "")
-        city_score = 20 if user_city in job_location else 5
+        city_score = 20 if (user_city and user_city in job_location) else 5
 
         # ── 4. 学历/背景 (20分) ──
         bg_score = 15  # 默认中等匹配

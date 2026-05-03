@@ -179,7 +179,7 @@ class ResumeWriterSkill(AutoClawSkill):
             skills_para.add_run("专业技能：").bold = True
             skills_para.add_run(", ".join(skills))
         else:
-            doc.add_paragraph("- 专业技能：待补充", style="List Bullet")
+            doc.add_paragraph("专业技能：待补充", style="List Bullet")
 
         doc.save(output_path)
         self.logger.info(f"Word 简历已保存: {output_path}")

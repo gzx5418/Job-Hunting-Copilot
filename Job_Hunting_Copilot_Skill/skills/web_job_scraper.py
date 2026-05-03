@@ -324,10 +324,12 @@ class JobScraperSkill(AutoClawSkill):
         return jobs
 
     def _try_parse_text_blocks(self, content: str, platform_name: str,
-                               keyword: str, city: str) -> List[Dict]:
+                                keyword: str, city: str) -> List[Dict]:
         """从文本块中解析岗位信息（WebDriver 返回纯文本时的降级方案）"""
         jobs: List[Dict] = []
-        platform_cfg = PLATFORM_REGISTRY.get(platform_name, {})
+        # platform_name 是中文名（如"BOSS直聘"），需要反查英文键
+        platform_key = next((k for k, v in PLATFORM_REGISTRY.items() if v.get("name") == platform_name), None)
+        platform_cfg = PLATFORM_REGISTRY.get(platform_key, {}) if platform_key else {}
 
         # 按段落分割，寻找岗位卡片
         blocks = [b.strip() for b in content.split('\n\n') if b.strip()]

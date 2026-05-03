@@ -35,8 +35,12 @@ def load_prompt(name: str, **variables) -> str:
     if variables:
         try:
             return template.format(**variables)
-        except KeyError as e:
-            logger.warning(f"Prompt 模板 [{name}] 缺少变量: {e}")
-            return template
+        except (KeyError, ValueError) as e:
+            logger.warning(f"Prompt 模板 [{name}] 格式化失败: {e}，尝试逐个替换")
+            # 降级方案：逐个替换已知变量，避免格式化语法冲突
+            result = template
+            for key, value in variables.items():
+                result = result.replace(f"{{{key}}}", str(value))
+            return result
 
     return template
