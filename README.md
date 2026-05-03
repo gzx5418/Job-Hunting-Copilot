@@ -183,7 +183,20 @@ Step 4: Microsoft Word（.docx）
 pip install -r Job_Hunting_Copilot_Skill/requirements.txt
 ```
 
-### 方式一：交互式演示（推荐）
+### 方式一：AutoClaw 平台交互（推荐）
+
+在 AutoClaw 中直接使用自然语言与智能体对话，GLM-4-Plus 自动识别意图并执行对应 Pipeline：
+
+```
+> 帮我生成一份针对管培生岗位的简历
+> 帮我找上海的 AI 产品实习，生成对比表
+> 我想练习管培生岗位的模拟面试
+```
+
+> 详细的自然语言指令与录制流程参见 [`录制流程.md`](录制流程.md)
+
+### 方式二：本地 CLI 交互
+
 ```bash
 cd Job_Hunting_Copilot_Skill
 python cli.py
@@ -201,19 +214,16 @@ python cli.py
 [8] 简历+面试    -- 生成简历后自动进入面试练习
 ```
 
-### 方式二：全流程自动演示
-```bash
-cd Job_Hunting_Copilot_Skill
-python agent.py
-```
+> 注意：所有场景均需用户自行提供经历草稿和岗位 JD，不预设示例数据。
 
 ### 查看生成文件
+
 ```
 output/
-├── 【管培生】李四_定向简历.docx              <- 简历
-├── 上海_AI产品实习_实习对比表.xlsx            <- 岗位对比表
-├── 大语言模型在教育领域的应用_文献综述报告.docx  <- 文献综述
-└── 面试练习报告_管培生.docx                   <- 面试练习报告
+├── 【岗位名称】姓名_定向简历.docx         <- 定制简历
+├── 城市_关键词_实习对比表.xlsx             <- 岗位对比表
+├── 研究主题_文献综述报告.docx             <- 文献综述
+└── 面试练习报告_岗位名称.docx             <- 面试练习报告
 ```
 
 ---
@@ -258,7 +268,7 @@ Job_Hunting_Copilot_Skill/
 │   └── interview_score_system.md  #   面试评分系统提示词
 │
 ├── assets/
-│   ├── user_resume.json           #   用户画像数据
+│   ├── user_resume.json           #   用户画像数据（空模板，由用户填写）
 │   └── resume_template.md         #   简历 Markdown 模板
 │
 ├── references/

@@ -1,29 +1,16 @@
 {
-  "name": "李四",
-  "phone": "138-xxxx-xxxx",
-  "email": "lisi@example.com",
+  "name": "",
+  "phone": "",
+  "email": "",
   "education": {
-    "school": "某某大学",
-    "major": "计算机科学与技术",
-    "degree": "研一",
-    "period": "2023.09 - 至今"
+    "school": "",
+    "major": "",
+    "degree": "",
+    "period": ""
   },
-  "target_city": "上海",
-  "target_role": "AI 产品实习生",
-  "availability": "每周 4 天，连续实习 3 个月",
-  "skills": ["Python", "Axure", "Prompt Engineering", "SQL", "竞品分析"],
-  "experiences": [
-    {
-      "time": "2022.09-2023.06",
-      "organization": "校园互联网大创项目",
-      "role": "产品负责人",
-      "actions": ["主导产品设计", "协调开发团队", "用户调研"]
-    },
-    {
-      "time": "2023.07-2023.09",
-      "organization": "某 AI 创业公司",
-      "role": "运营实习生",
-      "actions": ["社群运营", "用户反馈收集", "活动策划"]
-    }
-  ]
+  "target_city": "",
+  "target_role": "",
+  "availability": "",
+  "skills": [],
+  "experiences": []
 }
